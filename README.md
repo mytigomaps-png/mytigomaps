@@ -4,6 +4,29 @@ Aplicación web de turismo y planificación de viajes por el Perú. Identidad vi
 
 Repositorio público: https://github.com/mytigomaps-png/mytigomaps
 
+## Las 12 pantallas independientes
+
+Cada pantalla tiene una ruta propia, navegación para avanzar y volver y presentación dentro del área principal de la app:
+
+| N.º | Pantalla | Ruta |
+| --- | --- | --- |
+| 1 | Inicio | `#inicio` |
+| 2 | Explorar destinos y filtros | `#explorar` |
+| 3 | Detalles del destino y actividades | `#destino/:destino` |
+| 4 | Crear itinerario | `#itinerarios` |
+| 5 | Ver y editar el itinerario | `#plan/:id` |
+| 6 | Favoritos | `#favoritos` |
+| 7 | Mi perfil | `#perfil` |
+| 8 | Ayuda y opiniones | `#ayuda` |
+| 9 | Crear o editar perfil | `#registro` |
+| 10 | Preferencias de viaje | `#preferencias` |
+| 11 | Resumen de solicitud | `#solicitud/:id` |
+| 12 | Confirmación de solicitud | `#confirmacion/:id` |
+
+Las pantallas 9–12 reemplazan las ventanas emergentes anteriores. Los diálogos de confirmación para borrar datos no se cuentan como pantallas. La confirmación de solicitud indica que fue guardada localmente y que la coordinación y el pago siguen pendientes.
+
+Al pasar de un itinerario a una solicitud, se guarda el plan para poder recargar y volver a abrir el resumen y la confirmación. Los enlaces de confirmación requieren que la solicitud haya sido guardada; no confirman pagos, envíos ni reservas.
+
 ## Funciones
 
 - Inicio con recomendaciones según preferencias locales.
