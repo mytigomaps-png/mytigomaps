@@ -4,12 +4,17 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#0849d1">
-  <meta name="description" content="Descubre el Perú a tu manera. Encuentra destinos, guarda tus favoritos y organiza itinerarios personalizados con Mystigo.">
+  <meta name="color-scheme" content="light dark">
+  <script>try{const t=localStorage.getItem('mystigo.appearance')||'system';const d=t==='dark'||t==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches;document.documentElement.dataset.theme=d?'dark':'light';document.documentElement.style.colorScheme=d?'dark':'light';}catch{}</script>
+  <meta name="description" content="Descubre 30 países a tu manera. Preferencias, viajes sorpresa e itinerarios personalizados con Mystigo.">
   <title>MYSTIGO · Tu próxima aventura comienza aquí</title>
   <link rel="icon" href="logo.png">
-  <link rel="stylesheet" href="style.css?v=12screens-1">
-  <script src="destinations.js" defer></script>
-  <script src="app.js?v=12screens-1" defer></script>
+  <link rel="stylesheet" href="style.css?v=world30-1">
+  <link rel="stylesheet" href="world.css?v=world30-1">
+  <script src="destinations.js?v=world30-1" defer></script>
+  <script src="world.js?v=world30-1" defer></script>
+  <script src="app.js?v=world30-1" defer></script>
+  <script src="enhancements.js?v=world30-1" defer></script>
 </head>
 <body>
   <a class="skip" href="#main">Ir al contenido</a>
@@ -22,7 +27,7 @@
     <button class="profile-chip" data-action="profile"><span class="avatar" id="avatar">M</span><span id="profile-label">Tu espacio de viajero<small>Crea tu perfil</small></span><span>↗</span></button>
   </aside>
   <div class="workspace">
-    <header class="topbar"><a class="mobile-brand" href="#inicio"><img src="logo.png" alt="Mystigo">MYSTIGO</a><div class="breadcrumb" id="breadcrumb">EXPLORA / PERÚ</div><div class="top-actions"><span class="country"><span class="peru-flag"></span>Hecho para descubrir Perú</span><button class="button outline small" data-action="profile" id="header-profile">Crear mi perfil <span>↗</span></button></div></header>
+    <header class="topbar"><a class="mobile-brand" href="#inicio"><img src="logo.png" alt="Mystigo">MYSTIGO</a><div class="breadcrumb" id="breadcrumb">EXPLORA / EL MUNDO</div><div class="top-actions"><span class="country world-header-label">30 países por descubrir</span><label class="appearance-control"><span class="sr-only">Apariencia</span><select aria-label="Apariencia" data-theme-select><option value="system">Automático</option><option value="light">Claro</option><option value="dark">Oscuro</option></select></label><button class="notification-button" id="notification-button" data-action="notifications" aria-label="Notificaciones" aria-haspopup="dialog" aria-expanded="false"><svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></svg><span id="notification-count" hidden></span></button><button class="button outline small" data-action="profile" id="header-profile">Crear mi perfil <span>↗</span></button></div></header>
     <main id="main" tabindex="-1"></main>
     <footer><a href="#inicio">MYSTIGO</a><span>Tu próxima aventura comienza aquí.</span><a href="#ayuda">Información y privacidad</a></footer>
   </div>

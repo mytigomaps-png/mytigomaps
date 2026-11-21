@@ -1,0 +1,199 @@
+'use strict';
+/* Recommendations are calculated locally. No API keys or visitor profiles leave
+   the device. Budgets are planning assumptions in PEN, not live quotations. */
+const MYSTIGO_MOODS={
+  'Descansar':['Descanso','Playa'],
+  'Vivir una aventura':['Aventura','Naturaleza'],
+  'Descubrir cultura':['Cultura','Fotografía'],
+  'Probar nuevos sabores':['Gastronomía','Cultura'],
+  'Un viaje romántico':['Descanso','Fotografía'],
+  'Conectar con la naturaleza':['Naturaleza','Fotografía']
+};
+const MYSTIGO_TAGS=['Playa','Naturaleza','Aventura','Cultura','Gastronomía','Fotografía','Descanso'];
+const MYSTIGO_THEME_KEY='mystigo.appearance';
+const priorHome=home,priorDetails=details,priorPreferencesView=preferencesView,priorProfileView=profileView,priorHelpView=helpView,priorPlanView=planView,priorLog=log;
+paths.bell='<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/>';
+paths.moon='<path d="M20 14a8 8 0 0 1-10-10 8 8 0 1 0 10 10Z"/>';
+let notificationWorker=null,appearanceChoice='system';
+const systemAppearance=window.matchMedia?window.matchMedia('(prefers-color-scheme: dark)'):null;
+
+function readTravelPreferences(form){
+  const clamp=(v,min,max,fallback)=>{const n=Number(v);return Number.isFinite(n)&&n>=min&&n<=max?n:fallback;};
+  const mood=String(form.get('mood')||state.prefs.mood||'Descansar');
+  const date=String(form.get('travelDate')||state.prefs.travelDate||datePlus(today(),7));
+  return {tripBudget:clamp(form.get('tripBudget'),50,1000000,state.prefs.tripBudget||1500),tripDays:Math.round(clamp(form.get('tripDays'),1,7,state.prefs.tripDays||3)),people:Math.round(clamp(form.get('people'),1,20,state.prefs.people||1)),mood:MYSTIGO_MOODS[mood]?mood:'Descansar',scope:['Todos','Nacional','Internacional'].includes(form.get('scope'))?form.get('scope'):state.prefs.scope||'Todos',travelDate:/^\d{4}-\d{2}-\d{2}$/.test(date)&&date>=today()?date:datePlus(today(),7)};
+}
+function travelDefaults(){return {...state.prefs,tripBudget:state.prefs.tripBudget||1500,tripDays:state.prefs.tripDays||3,people:state.prefs.people||1,mood:state.prefs.mood||'Descansar',scope:state.prefs.scope||'Todos',travelDate:state.prefs.travelDate>=today()?state.prefs.travelDate:datePlus(today(),7)};}
+function tripEstimate(dest,days,people,style){
+  const base=dest.daily*({Económico:1,Moderado:1.4,Alto:2.2}[style]||1)*people;
+  const lodging=Math.round(base*.4*Math.max(0,days-1)),food=Math.round(base*.35*days),activities=Math.round(base*.25*days),reserve=Math.round((lodging+food+activities)*.1);
+  return {lodging,food,activities,reserve,total:lodging+food+activities+reserve};
+}
+function tasteVector(options=travelDefaults()){
+  const vector=MYSTIGO_TAGS.map(tag=>(state.prefs.types.includes(tag)?3:0)+(state.prefs.activities.includes(tag)?2:0)+(MYSTIGO_MOODS[options.mood]?.includes(tag)?3:0));
+  if(state.prefs.activities.includes('Caminatas'))vector[MYSTIGO_TAGS.indexOf('Naturaleza')]+=2;
+  if(state.prefs.activities.includes('Deportes extremos'))vector[MYSTIGO_TAGS.indexOf('Aventura')]+=2;
+  state.favorites.forEach(id=>destination(id)?.categories.forEach(tag=>{const i=MYSTIGO_TAGS.indexOf(tag);if(i>=0)vector[i]+=1.5;}));
+  Object.entries(state.affinity||{}).forEach(([tag,value])=>{const i=MYSTIGO_TAGS.indexOf(tag);if(i>=0)vector[i]+=Math.min(3,Number(value)||0)*.25;});
+  return vector;
+}
+function recommendation(dest,options=travelDefaults()){
+  const user=tasteVector(options),item=MYSTIGO_TAGS.map(tag=>dest.categories.includes(tag)?1:0);
+  const dot=item.reduce((v,x,i)=>v+x*user[i],0),norm=Math.hypot(...user)*Math.hypot(...item);
+  const affinity=norm?dot/norm:0,month=Number(String(options.travelDate||datePlus(today(),7)).slice(5,7));
+  const cost=tripEstimate(dest,options.tripDays||3,options.people||1,options.budget||'Moderado');
+  const fits=cost.total<=Number(options.tripBudget||1500),season=dest.months?.includes(month)||false;
+  const reasons=[];
+  const interests=dest.categories.filter(tag=>state.prefs.types.includes(tag)||state.prefs.activities.includes(tag));
+  if(interests.length)reasons.push('Conecta con '+interests.slice(0,2).join(' y ').toLowerCase());
+  if(MYSTIGO_MOODS[options.mood]?.some(t=>dest.categories.includes(t)))reasons.push('Una idea para '+options.mood.toLowerCase());
+  if(fits)reasons.push('Estadía y actividades dentro de tu presupuesto estimado');
+  if(season)reasons.push('Coincide con una época orientativa para visitarlo');
+  const score=affinity*100+(fits?30:-20)+(season?7:0);
+  return {dest,score,cost,fits,season,reasons};
+}
+ranked=function(){return MYSTIGO_DESTINATIONS.map(d=>recommendation(d)).sort((a,b)=>b.score-a.score||a.dest.name.localeCompare(b.dest.name)).map(r=>r.dest);};
+
+function countryLabel(dest){return `${dest.region}, ${dest.country}`;}
+function photoCredit(dest){const c=dest.photoCredit;if(!c)return '';return `<p class="photo-credit">Foto: ${esc(c.author)} · <a href="${esc(c.source)}" target="_blank" rel="noopener noreferrer">${esc(c.license)}</a></p>`;}
+card=function(d){
+  const saved=state.favorites.includes(d.id);
+  return `<article class="destination-card"><div class="card-image-wrap"><a href="#destino/${d.id}" aria-label="Descubrir ${esc(d.name)}"><img class="card-photo" src="${d.image}" alt="${esc(d.photo)}" loading="lazy"></a><span class="card-tag">${esc(d.country)}</span><button class="favorite-button ${saved?'saved':''}" data-action="favorite" data-id="${d.id}" aria-label="${saved?'Quitar':'Guardar'} ${esc(d.name)} ${saved?'de':'en'} favoritos" aria-pressed="${saved}">${icon('heart')}</button></div><div class="card-body"><div class="card-place">${icon('pin')}${esc(countryLabel(d))}</div><a href="#destino/${d.id}"><h3 class="card-title">${esc(d.name)}</h3></a><p>${esc(d.description)}</p><div class="card-bottom"><span>Referencia diaria en destino<br><strong>${money(d.daily)}</strong> / persona</span><a href="#destino/${d.id}" class="round-arrow" aria-label="Ver ${esc(d.name)}">${icon('search')}</a></div></div></article>`;
+};
+function countryCard(c){const d=destination(c.featured),count=MYSTIGO_DESTINATIONS.filter(x=>x.countryCode===c.code).length;return `<article class="country-card"><a href="#explorar?pais=${c.code}" aria-label="Explorar ${esc(c.name)}"><img src="${d.image}" alt="${esc(d.photo)}" loading="lazy"><div class="country-overlay"><span>${esc(c.continent)}</span><h3>${esc(c.name)}</h3><p>${count} ${count===1?'destino para descubrir':'destinos para descubrir'}</p></div></a></article>`;}
+function surprisePanel(){const p=travelDefaults();return `<section class="surprise-panel"><div class="surprise-art">${icon('plane')}<span>✦</span></div><div><div class="eyebrow">VIAJA SIN TENER QUE ELEGIRLO TODO</div><h2>¿Y si tu próximo destino<br>fuera una sorpresa?</h2><p>Mystigo elige un lugar y organiza el recorrido con tus gustos, presupuesto y lo que te apetece hoy.</p><div class="surprise-summary"><span>${money(p.tripBudget)} en destino</span><span>${p.tripDays} días</span><span>${p.people} viajero(s)</span><span>${esc(p.mood)}</span></div><p class="surprise-note">Vuelos y pasajes hacia el destino se cotizan aparte.</p></div><div class="surprise-actions"><button class="button yellow" data-action="surprise-now">Sorpréndeme</button><a class="text-link" href="#preferencias?volver=inicio">Ajustar mis preferencias</a></div></section>`;}
+home=function(){
+  const first=state.profile?.name?.split(' ')[0],countries=['PE','MX','JP','FR','CO','EG'].map(code=>WORLD_COUNTRIES.find(c=>c.code===code));
+  return `${title('EL MUNDO TAMBIÉN PUEDE PARECERSE A TI',first?`Hola, ${esc(first)}. ¿A dónde vamos?`:'Tu próxima historia empieza aquí.','30 países. Tus gustos. Una forma de viajar que va contigo.')}<section class="hero"><img class="hero-image" src="cusco.jpg" alt="Machu Picchu entre las montañas de Cusco"><div class="hero-copy"><span class="hero-label">DE PERÚ AL MUNDO</span><h2>El mundo es grande.<br>Tu próxima <em>historia,</em><br>muy tuya.</h2><p>Encuentra destinos, guarda lo que te inspira y deja que Mystigo te ayude a elegir.</p><a class="button yellow" href="#explorar">Explorar los 30 países</a></div><div class="hero-world-badge"><strong>30</strong><span>países<br>por descubrir</span></div></section><form class="search-strip" id="home-search"><label><span class="field-caption">TU PRÓXIMA PARADA</span><input name="query" placeholder="País, ciudad o experiencia…" aria-label="Buscar un destino"></label><label><span class="field-caption">TU FORMA DE VIAJAR</span><select name="category" aria-label="Categoría de viaje"><option value="Todos">Un poco de todo</option><option>Playa</option><option>Naturaleza</option><option>Aventura</option><option>Cultura</option></select></label><button class="button" type="submit">${icon('search')} Explorar</button></form>${surprisePanel()}<div class="section-heading"><div><h2>${state.profile?'Ideas elegidas para ti':'Encuentra tu siguiente lugar'}</h2><p>Según tus intereses y tu presupuesto de viaje en destino.</p></div><a href="#preferencias?volver=inicio" class="text-link">Personalizar</a></div><div class="card-grid">${ranked().slice(0,6).map(card).join('')}</div><div class="section-heading"><div><h2>Un país, un nuevo comienzo.</h2><p>América, Europa, Asia, Medio Oriente y África.</p></div><a href="#explorar" class="text-link">Ver los 30 países</a></div><div class="country-grid home-countries">${countries.map(countryCard).join('')}</div><section class="info-banner"><div><h3>Tú eliges cómo vivirlo.<br>Mystigo organiza el recorrido.</h3><p>Actividades por día, horarios orientativos y presupuesto estimado.</p></div><div><span class="price">S/ 15</span><small>Servicio de planificación</small></div><a href="#itinerarios" class="button yellow small">Crear mi itinerario</a></section><p class="storage-note">Presupuestos en soles peruanos (PEN), solo para estadía, alimentación y actividades en destino. Son estimaciones propias; no incluyen vuelos, pasajes hacia el destino ni reservas especiales. Confirma los importes con los proveedores.</p>`;
+};
+
+exploreView=function(params){
+  const country=WORLD_COUNTRIES.some(c=>c.code===params.get('pais'))?params.get('pais'):'Todos';
+  explore={q:params.get('q')||'',category:params.get('categoria')||'Todos',zone:'Todas',country,budget:'Todos',view:country!=='Todos'||params.get('q')||params.get('categoria')&&params.get('categoria')!=='Todos'?'destinos':'paises'};
+  return `${title('30 PAÍSES. MUCHAS FORMAS DE DESCUBRIRLOS.','¿Qué te gustaría descubrir?','Busca por país, ciudad, presupuesto o experiencia.')}<div class="catalog-tabs" role="group" aria-label="Ver catálogo"><button data-action="catalog-view" data-view="paises">Países</button><button data-action="catalog-view" data-view="destinos">Destinos</button></div><div class="filter-row world-filters"><div class="input-wrap"><label class="field-caption" for="explore-query">PAÍS, CIUDAD O EXPERIENCIA</label><input id="explore-query" type="search" value="${esc(explore.q)}" placeholder="Ej. Japón, París, playa…"></div><div class="input-wrap"><label class="field-caption" for="explore-zone">REGIÓN DEL MUNDO</label><select id="explore-zone"><option value="Todas">Todas las regiones</option>${['América y el Caribe','Europa','Asia y Medio Oriente','África'].map(c=>`<option>${c}</option>`).join('')}</select></div><div class="input-wrap"><label class="field-caption" for="explore-country">PAÍS</label><select id="explore-country"><option value="Todos">Todos los países</option>${WORLD_COUNTRIES.map(c=>`<option value="${c.code}" ${country===c.code?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div><div class="input-wrap"><label class="field-caption" for="explore-budget">REFERENCIA DIARIA / PERSONA</label><select id="explore-budget"><option value="Todos">Todos los presupuestos</option><option value="150">Hasta S/ 150</option><option value="250">Hasta S/ 250</option><option value="400">Hasta S/ 400</option><option value="600">Hasta S/ 600</option></select></div></div>${categories(explore.category)}<p class="results-count" id="results-count"></p><div id="explore-results"></div><p class="storage-note">Referencias diarias orientativas en PEN para estadía y actividades. No incluyen vuelos o pasajes hacia el país. Las fuentes turísticas y los créditos de cada fotografía aparecen en la ficha del destino.</p>`;
+};
+updateExplore=function(){
+  if(!$('#explore-results'))return;
+  const matches=MYSTIGO_DESTINATIONS.filter(d=>(explore.category==='Todos'||d.categories.includes(explore.category))&&(explore.zone==='Todas'||d.continent===explore.zone)&&(explore.country==='Todos'||d.countryCode===explore.country)&&(explore.budget==='Todos'||d.daily<=Number(explore.budget))&&normalize([d.name,d.region,d.country,d.continent,...d.categories,d.description].join(' ')).includes(normalize(explore.q)));
+  const countries=WORLD_COUNTRIES.filter(c=>matches.some(d=>d.countryCode===c.code)),countryView=explore.view==='paises';
+  const count=countryView?countries.length:matches.length;
+  $('#results-count').textContent=`${count} ${countryView?(count===1?'país encontrado':'países encontrados'):(count===1?'destino encontrado':'destinos encontrados')} · 30 países en el catálogo`;
+  $('#explore-results').className=count?(countryView?'country-grid':'card-grid'):'';
+  $('#explore-results').innerHTML=count?(countryView?countries.map(countryCard).join(''):matches.map(card).join('')):empty('search','Tu lugar está por aparecer.','Prueba otro país o cambia los filtros y el presupuesto.','Restablecer filtros','reset-filters');
+  $$('[data-action="explore-category"]').forEach(b=>{b.classList.toggle('active',b.dataset.category===explore.category);b.setAttribute('aria-pressed',b.dataset.category===explore.category);});
+  $$('[data-action="catalog-view"]').forEach(b=>{const active=b.dataset.view===explore.view;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active);});
+};
+details=function(d){let html=priorDetails(d);html=html.replace('<section class="panel"><div class="eyebrow">DÉJATE SORPRENDER',`<section class="panel">${photoCredit(d)}<div class="eyebrow">DÉJATE SORPRENDER`);return html;};
+
+function travelPreferenceFields(){const p=travelDefaults();return `<fieldset class="preference-fieldset travel-preferences"><legend>Para que Mystigo elija por ti</legend><div class="form-grid"><div class="field"><label for="pref-trip-budget">Presupuesto del grupo en destino (S/)</label><input id="pref-trip-budget" name="tripBudget" type="number" min="50" max="1000000" step="1" value="${p.tripBudget}" required></div><div class="field"><label for="pref-trip-days">Días de viaje</label><select id="pref-trip-days" name="tripDays">${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${n===p.tripDays?'selected':''}>${n} ${n===1?'día':'días'}</option>`).join('')}</select></div><div class="field"><label for="pref-people">Viajeros</label><input id="pref-people" name="people" type="number" min="1" max="20" value="${p.people}" required></div><div class="field"><label for="pref-travel-date">Próxima fecha de viaje</label><input id="pref-travel-date" name="travelDate" type="date" value="${p.travelDate}" min="${today()}" required></div><div class="field"><label for="pref-mood">¿Qué te apetece en este viaje?</label><select id="pref-mood" name="mood">${Object.keys(MYSTIGO_MOODS).map(m=>`<option ${m===p.mood?'selected':''}>${m}</option>`).join('')}</select></div><div class="field"><label for="pref-scope">¿Dónde te gustaría descubrir?</label><select id="pref-scope" name="scope">${['Todos','Nacional','Internacional'].map(m=>`<option ${m===p.scope?'selected':''}>${m}</option>`).join('')}</select></div></div><div class="notice spacer-top">El presupuesto es para estadía y actividades. Los vuelos o pasajes para llegar al destino se calculan aparte. La fecha ayuda a priorizar épocas orientativas; no es un pronóstico del tiempo.</div></fieldset>`;}
+preferencesView=function(params){return priorPreferencesView(params).replace('<div class="form-actions">',travelPreferenceFields()+'<div class="form-actions">').replace('Hay un Perú','Hay un mundo').replace('Descubre destinos que van contigo.','Descubre destinos que van contigo.');};
+
+planner=function(params){
+  const d=destination(params.get('destino'))||destination('trujillo'),p=travelDefaults();
+  return `${title('TU VIAJE, A TU MANERA','Crea tu itinerario ideal.','Elige un destino o deja que Mystigo prepare un viaje sorpresa.')}<div class="planner-layout"><div><section class="planner-surprise"><div><h2>Hoy puedes dejarte sorprender.</h2><p>${money(p.tripBudget)} en destino · ${p.tripDays} días · ${esc(p.mood)}</p></div><button class="button yellow" data-action="surprise-now">Sorpréndeme</button></section><form class="panel" id="planner-form"><h2>O planifica el destino que tienes en mente.</h2><div class="form-grid"><div class="field"><label for="plan-country">País</label><select id="plan-country">${WORLD_COUNTRIES.map(c=>`<option value="${c.code}" ${c.code===d.countryCode?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div><div class="field"><label for="plan-destination">Destino</label><select id="plan-destination" name="dest">${MYSTIGO_DESTINATIONS.filter(x=>x.countryCode===d.countryCode).map(x=>`<option value="${x.id}" ${x.id===d.id?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div><div class="field"><label for="plan-date">Fecha de inicio</label><input id="plan-date" name="date" type="date" value="${p.travelDate}" min="${today()}" required></div><div class="field"><label for="plan-days">Duración del viaje</label><select name="days" id="plan-days">${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${n===p.tripDays?'selected':''}>${n} ${n===1?'día':'días'}</option>`).join('')}</select></div><div class="field"><label for="plan-people">Personas</label><input name="people" id="plan-people" type="number" min="1" max="20" value="${p.people}" required></div><div class="field"><label for="plan-budget">Presupuesto total del grupo en destino (S/)</label><input name="budget" id="plan-budget" type="number" min="50" max="1000000" step="1" value="${p.tripBudget}" required></div><div class="field"><label for="plan-style">Estilo de viaje</label><select name="style" id="plan-style">${['Económico','Moderado','Alto'].map(s=>`<option ${s===p.budget?'selected':''}>${s}</option>`).join('')}</select></div><div class="field"><label for="plan-mood">¿Qué te apetece hoy?</label><select name="mood" id="plan-mood">${Object.keys(MYSTIGO_MOODS).map(m=>`<option ${m===p.mood?'selected':''}>${m}</option>`).join('')}</select></div><div class="field wide"><label>¿Qué te gustaría hacer?</label><div class="chips" id="plan-interests">${MYSTIGO_TAGS.map(c=>`<button type="button" class="choice" data-action="plan-interest" data-value="${c}" aria-pressed="${[...state.prefs.types,...state.prefs.activities].includes(c)}">${c}</button>`).join('')}</div></div></div><div class="selected-list" id="selected-activities"></div><div class="notice">Las estimaciones incluyen estadía y actividades en destino. Vuelos, pasajes hacia el destino, entradas especiales y reservas se confirman y pagan por separado.</div><div class="form-actions"><button class="button" type="submit">Generar vista previa</button></div></form><div id="saved-plans">${savedPlans()}</div></div><aside class="planner-aside"><section class="panel"><div class="eyebrow">EL MUNDO PUEDE IR A TU RITMO</div><h2>30 países.<br>Un viaje muy tuyo.</h2><ul class="planner-benefits"><li>Propuestas según tus gustos y presupuesto</li><li>Viaje sorpresa con una sola elección</li><li>Actividades organizadas por día</li><li>Ubicaciones en Google Maps</li><li>Descarga y recordatorio en tu calendario</li></ul><div class="summary-price"><span>Servicio de planificación</span><strong>S/ 15</strong></div><p class="storage-note">Sin cobro automático. Las solicitudes quedan pendientes de coordinación y pago.</p></section><a class="button outline" href="#preferencias?volver=itinerarios">Actualizar preferencias</a></aside></div>`;
+};
+
+function buildItinerary(spec){
+  const dest=destination(spec.dest),days=Number(spec.days),people=Number(spec.people),budget=Number(spec.budget),date=String(spec.date||'');
+  if(!dest||!Number.isInteger(days)||days<1||days>7||!Number.isInteger(people)||people<1||people>20||!Number.isFinite(budget)||budget<50||budget>1000000||!/^\d{4}-\d{2}-\d{2}$/.test(date)||date<today())return null;
+  const interests=Array.isArray(spec.interests)?spec.interests:[],chosen=state.selected.filter(k=>k.startsWith(dest.id+'|')),mood=MYSTIGO_MOODS[spec.mood]||[];
+  const order=dest.blocks.map((_,i)=>i),score=i=>dest.blocks[i].tags.filter(t=>interests.includes(t)||mood.includes(t)).length+chosen.filter(k=>Number(k.split('|')[1])===i).length*20;
+  order.splice(1,order.length-1,...order.slice(1).sort((a,b)=>score(b)-score(a)));
+  const plans=Array.from({length:days},(_,i)=>{const index=order[i],b=dest.blocks[index];return b?{title:b.title,block:index,full:!!b.full,extra:!!b.extra,items:b.items.map(a=>({time:a[0],name:a[1],note:a[2]}))}:{title:'Un día a tu ritmo',block:null,full:false,extra:false,items:[{time:'10:00',name:'Tiempo libre en '+dest.name,note:'Consulta una experiencia local según tus intereses y disponibilidad.'},{time:'13:00',name:'Almuerzo y descanso',note:'Elige según tu presupuesto.'},{time:'16:00',name:'Paseo por '+dest.name,note:'Deja margen para desplazamientos y descanso.'}]};});
+  return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now()),dest:dest.id,date,people,budget,style:spec.style||'Moderado',mood:spec.mood||'Descansar',interests,days:plans,cost:tripEstimate(dest,days,people,spec.style),status:'preview',created:new Date().toISOString(),surprise:!!spec.surprise,reasons:spec.reasons||[],omitted:chosen.filter(k=>!plans.some(d=>d.block===Number(k.split('|')[1]))).map(k=>{const [,b,i]=k.split('|');return dest.blocks[b]?.items[i]?.[1];}).filter(Boolean)};
+}
+function publishLocalPlan(plan){if(!plan){toast('Revisa los datos de tu viaje.');return;}currentPlan=plan;saveCurrent(false);log('itinerario_creado',destination(plan.dest).name);navigate('plan/'+plan.id);}
+createPlan=function(form){const f=new FormData(form);publishLocalPlan(buildItinerary({dest:f.get('dest'),date:f.get('date'),days:Number(f.get('days')),people:Number(f.get('people')),budget:Number(f.get('budget')),style:f.get('style'),mood:f.get('mood')||'Descansar',interests:$$('#plan-interests .choice[aria-pressed="true"]').map(b=>b.dataset.value)}));};
+function surpriseCandidates(options=travelDefaults()){
+  return MYSTIGO_DESTINATIONS.filter(d=>(options.scope!=='Nacional'||d.countryCode==='PE')&&(options.scope!=='Internacional'||d.countryCode!=='PE')).map(d=>recommendation(d,options)).filter(r=>r.fits).sort((a,b)=>b.score-a.score||a.cost.total-b.cost.total);
+}
+function generateSurprise(repeat=false){
+  const p=travelDefaults(),options=repeat&&currentPlan?{...p,tripBudget:currentPlan.budget,tripDays:currentPlan.days.length,people:currentPlan.people,travelDate:currentPlan.date,budget:currentPlan.style,mood:currentPlan.mood}:p;
+  const candidates=surpriseCandidates(options);
+  if(!candidates.length){openModal(`<div class="eyebrow">UN VIAJE QUE RESPETE TU PRESUPUESTO</div><h2>Ajustemos un detalle antes de viajar.</h2><p>No encontramos una propuesta del catálogo que se ajuste a ${money(options.tripBudget)} para ${options.tripDays} días y ${options.people} viajero(s), con el estilo elegido.</p><p>Puedes reducir días o viajeros, elegir un estilo económico o ampliar el presupuesto.</p><a class="button" href="#preferencias?volver=inicio" data-action="close-and-preferences">Ajustar mis preferencias</a>`);return;}
+  const fresh=candidates.filter(r=>!state.surpriseHistory.includes(r.dest.id)),pool=(fresh.length?fresh:candidates).slice(0,4),chosen=pool[Math.floor(Math.random()*pool.length)];
+  state.surpriseHistory.unshift(chosen.dest.id);state.surpriseHistory=state.surpriseHistory.slice(0,12);persist();
+  const plan=buildItinerary({dest:chosen.dest.id,date:options.travelDate,days:options.tripDays,people:options.people,budget:options.tripBudget,style:options.budget,mood:options.mood,interests:[...state.prefs.types,...state.prefs.activities],surprise:true,reasons:chosen.reasons});
+  publishLocalPlan(plan);
+}
+planView=function(p){const d=destination(p.dest);const extra=p.surprise?`<section class="surprise-reveal"><span class="pill">Tu viaje sorpresa</span><h2>Tu próxima historia te espera en ${esc(d.name)}.</h2><p>${esc(d.country)} · Elegido para ${esc(p.mood.toLowerCase())}.</p><ul>${p.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul><p class="storage-note">${money(p.cost.total)} estimados en destino para el grupo. Vuelos o pasajes hacia el destino no incluidos. Las épocas sugeridas son orientativas, no información meteorológica en vivo.</p><button class="button outline small" data-action="surprise-again">Descubrir otra propuesta</button></section>`:'';return extra+priorPlanView(p)+`<div class="form-actions no-print"><button class="button outline" data-action="calendar-plan">${icon('clock')}Añadir recordatorio al calendario</button></div>`;};
+
+function addNotice(notice,device=false){
+  if(!state.notificationPrefs.inApp||state.notifications.some(n=>n.id===notice.id))return;
+  const item={...notice,read:false,at:new Date().toISOString()};state.notifications.unshift(item);state.notifications=state.notifications.slice(0,60);persist();updateNotificationBadge();
+  if(device&&state.notificationPrefs.device&&typeof Notification!=='undefined'&&Notification.permission==='granted')showDeviceNotice(item);
+}
+function updateNotificationBadge(){const count=state.notifications.filter(n=>!n.read).length,b=$('#notification-count'),button=$('#notification-button');if(b){b.textContent=count>9?'9+':String(count);b.hidden=!count;}if(button)button.setAttribute('aria-label',`Notificaciones${count?', '+count+' sin leer':''}`);}
+function openNotifications(){
+  const notices=state.notifications;
+  openModal(`<div class="eyebrow">UN PEQUEÑO IMPULSO PARA TU PRÓXIMA HISTORIA</div><h2>Tus notificaciones.</h2><p>Ideas personalizadas y avisos de tus viajes guardados.</p><div class="notification-list">${notices.length?notices.slice(0,20).map(n=>`<article class="notification-item ${n.read?'':'unread'}"><span class="notification-symbol">${icon(n.type==='trip'?'clock':'bell')}</span><div><h3>${esc(n.title)}</h3><p>${esc(n.body)}</p><small>${new Date(n.at).toLocaleDateString('es-PE')}</small>${n.route?`<button class="text-link" data-action="open-notice" data-id="${esc(n.id)}">Ver detalle</button>`:''}</div></article>`).join(''):'<div class="notice">Todavía no tienes avisos. Guarda un itinerario o actualiza tus preferencias para recibir ideas aquí.</div>'}</div><div class="form-actions"><button class="button outline small" data-action="read-notices">Marcar todas como leídas</button><button class="button small" data-action="enable-device-notifications">Activar avisos del dispositivo</button></div><p class="storage-note">Los avisos se generan al entrar o mientras usas Mystigo. Para recordatorios con la app cerrada, añade tu viaje al calendario. El sistema o navegador puede limitar los avisos del dispositivo.</p>`);
+  $('#notification-button')?.setAttribute('aria-expanded','true');
+}
+async function showDeviceNotice(item){try{const registration=notificationWorker||await navigator.serviceWorker.getRegistration('./');if(!registration?.active)return false;await registration.showNotification(item.title,{body:item.body,icon:'logo.png',badge:'logo.png',tag:item.id,data:{url:'./#'+safeReturn(item.route||'inicio')}});return true;}catch{return false;}}
+async function enableDeviceNotifications(){
+  if(!('Notification' in window)||!('serviceWorker' in navigator)){toast('Este navegador no admite avisos del dispositivo. La campana de Mystigo seguirá disponible.');return;}
+  if(Notification.permission==='denied'){toast('Los avisos están bloqueados. Puedes revisar el permiso del sitio en tu navegador.');return;}
+  try{const permission=await Notification.requestPermission();state.notificationPrefs.device=permission==='granted';persist();if(permission!=='granted'){toast('Puedes seguir usando las notificaciones dentro de Mystigo.');return;}
+    if(!notificationWorker)notificationWorker=await navigator.serviceWorker.register('./sw.js',{scope:'./'});
+    const registration=await Promise.race([navigator.serviceWorker.ready,new Promise(resolve=>setTimeout(()=>resolve(null),6000))]);
+    if(registration)notificationWorker=registration;
+    const shown=await showDeviceNotice({title:'Mystigo te acompaña',body:'Los avisos del dispositivo están activados mientras usas Mystigo.',id:'device-enabled',route:'inicio'});
+    toast(shown?'Avisos del dispositivo activados.':'Permiso concedido. Los avisos estarán disponibles cuando el navegador active el servicio.');
+  }catch{toast('No se pudo activar el aviso del dispositivo. Puedes usar la campana de Mystigo.');}
+}
+function localReminders(){
+  state.plans.forEach(p=>{const days=Math.round((new Date(p.date+'T12:00:00')-new Date(today()+'T12:00:00'))/86400000);if(days>=0&&days<=2)addNotice({id:`trip:${p.id}:${today()}`,type:'trip',title:days===0?'Tu viaje empieza hoy':'Tu próxima aventura se acerca',body:`${destination(p.dest).name} · ${days===0?'revisa tu itinerario':'faltan '+days+' día(s)'}. Confirma tus reservas con los proveedores.`,route:'plan/'+p.id},true);});
+  const idea=ranked()[0];if(idea)addNotice({id:'inspiration:'+today(),type:'idea',title:'Una idea para tu próxima historia',body:`${idea.name}, ${idea.country}: una propuesta según tus preferencias.`,route:'destino/'+idea.id});
+}
+log=function(type,detail){priorLog(type,detail);const d=MYSTIGO_DESTINATIONS.find(x=>x.name===detail);if(type==='destino_guardado'&&d){d.categories.forEach(tag=>state.affinity[tag]=Math.min(12,(state.affinity[tag]||0)+1));persist();}
+  if(type==='itinerario_creado'&&currentPlan)addNotice({id:'plan:'+currentPlan.id,type:'trip',title:currentPlan.surprise?'Tu viaje sorpresa está preparado':'Tu itinerario está preparado',body:`${detail} · ${currentPlan.days.length} días. Puedes revisarlo, descargarlo o añadirlo al calendario.`,route:'plan/'+currentPlan.id},true);
+  if(type==='solicitud_pendiente'&&currentPlan)addNotice({id:'request:'+currentPlan.id,type:'trip',title:'Solicitud guardada en este dispositivo',body:'La coordinación y el pago siguen pendientes. Puedes compartir el resumen por correo.',route:'confirmacion/'+currentPlan.id},true);
+  if(type==='preferencias_actualizadas')addNotice({id:'preferences:'+Date.now(),type:'idea',title:'Tus recomendaciones ya tienen tu estilo',body:'Actualizamos las propuestas según tus gustos, presupuesto y lo que te apetece en este viaje.',route:'inicio'});
+};
+
+function calendarPlan(){if(!currentPlan)return;const p=currentPlan,date=p.date.replaceAll('-',''),end=datePlus(p.date,p.days.length).replaceAll('-','');const escapeICS=s=>String(s).replace(/\\/g,'\\\\').replace(/\r?\n/g,'\\n').replace(/,/g,'\\,').replace(/;/g,'\\;');const stamp=new Date().toISOString().replace(/[-:]/g,'').replace(/\.\d{3}Z/,'Z');const lines=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//MYSTIGO//Viajes//ES','CALSCALE:GREGORIAN','BEGIN:VEVENT','UID:'+p.id+'@mystigo','DTSTAMP:'+stamp,'DTSTART;VALUE=DATE:'+date,'DTEND;VALUE=DATE:'+end,'SUMMARY:'+escapeICS('Mi viaje a '+destination(p.dest).name),'DESCRIPTION:'+escapeICS('Revisa tus reservas y tu itinerario de Mystigo. Presupuesto orientativo en destino: '+money(p.cost.total)+'. Vuelos y reservas especiales no incluidos.'),'BEGIN:VALARM','ACTION:DISPLAY','DESCRIPTION:Revisar mi viaje de Mystigo','TRIGGER:-P1D','END:VALARM','END:VEVENT','END:VCALENDAR'];download('Mystigo_recordatorio.ics',lines.join('\r\n')+'\r\n','text/calendar;charset=utf-8');toast('Abre el archivo descargado y guárdalo en tu calendario para recibir el recordatorio.');}
+
+function applyAppearance(choice='system',save=false){appearanceChoice=['system','light','dark'].includes(choice)?choice:'system';const dark=appearanceChoice==='dark'||appearanceChoice==='system'&&systemAppearance?.matches;document.documentElement.dataset.theme=dark?'dark':'light';document.documentElement.style.colorScheme=dark?'dark':'light';const meta=$('meta[name="theme-color"]');if(meta)meta.setAttribute('content',dark?'#0a1224':'#0849d1');$$('[data-theme-select]').forEach(s=>s.value=appearanceChoice);if(save)try{localStorage.setItem(MYSTIGO_THEME_KEY,appearanceChoice);}catch{toast('El modo se aplicó, pero el navegador no permitió guardarlo.');}}
+function renderEnhancements(){
+  updateNotificationBadge();$$('[data-theme-select]').forEach(s=>s.value=appearanceChoice);
+  const profileButton=$('#header-profile');if(profileButton)profileButton.innerHTML=state.profile?`Hola, ${esc(state.profile.name.split(' ')[0])} ${icon('user')}`:'Crear mi perfil';
+}
+function notificationSettings(){return `<section class="panel preferences-settings"><h2>Tu experiencia en Mystigo.</h2><div class="settings-grid"><div class="field"><label for="profile-theme">Apariencia</label><select id="profile-theme" data-theme-select><option value="system">Según mi dispositivo</option><option value="light">Modo claro</option><option value="dark">Modo oscuro</option></select><p>El modo automático cambia con la configuración de tu celular o navegador.</p></div><div><h3>Avisos de viaje</h3><label class="checkbox-line"><input id="in-app-notifications" type="checkbox" ${state.notificationPrefs.inApp?'checked':''}> Recibir avisos en la campana de Mystigo</label><button class="button outline small spacer-top" data-action="enable-device-notifications">Activar avisos del dispositivo</button><p class="storage-note">El navegador te pedirá permiso. Los avisos se generan al abrir la app o mientras la usas. Para recordatorios con la app cerrada, utiliza el calendario.</p></div></div></section>`;}
+profileView=function(){const p=travelDefaults();return priorProfileView()+`<section class="panel spacer-top"><div class="section-heading" style="margin-top:0"><div><h2>Tu próximo viaje sorpresa.</h2><p>Con tus preferencias guardadas, Mystigo puede elegir por ti.</p></div><a class="text-link" href="#preferencias?volver=perfil">Editar</a></div><div class="surprise-summary"><span>${money(p.tripBudget)} en destino</span><span>${p.tripDays} días</span><span>${p.people} viajero(s)</span><span>${esc(p.mood)}</span><span>${esc(p.scope)}</span></div><button class="button yellow spacer-top" data-action="surprise-now">Sorpréndeme</button></section>${notificationSettings()}`;};
+helpView=function(){return priorHelpView().replace('Una aplicación para descubrir destinos turísticos del Perú','Una aplicación para descubrir destinos turísticos de 30 países').replace('Esta versión organiza las sugerencias a partir de tus preferencias y un catálogo de rutas. No utiliza un servicio de inteligencia artificial externo.','Mystigo calcula la afinidad entre tus preferencias, favoritos y destinos. Considera presupuesto, fecha y lo que te apetece para preparar viajes sorpresa. El recomendador funciona en tu dispositivo; no utiliza un servicio generativo externo.')+`<section class="panel spacer-top"><h2>Lo que debes saber sobre las nuevas funciones.</h2><details class="faq"><summary>¿El viaje sorpresa respeta mi presupuesto?</summary><p>Se elige entre propuestas cuyo estimado para estadía y actividades cabe en el presupuesto del grupo. Los vuelos y pasajes hacia el destino, así como las reservas especiales, se pagan aparte y deben verificarse.</p></details><details class="faq"><summary>¿Los avisos llegan con la app cerrada?</summary><p>La campana reúne avisos locales. Con permiso, Mystigo también puede mostrar avisos del dispositivo cuando se generan al abrir o usar la app. No existe un servidor de notificaciones push ni envío automático con la web cerrada. Para un recordatorio futuro, descarga el archivo de calendario desde tu itinerario y guárdalo en tu calendario.</p></details><details class="faq"><summary>¿La temporada es información en vivo?</summary><p>No. La fecha ayuda a priorizar meses orientativos de viaje del catálogo. Confirma clima, accesos y disponibilidad antes de reservar. No se ofrecen pronósticos ni ofertas comerciales en tiempo real.</p></details></section>`;};
+
+document.addEventListener('click',event=>{
+  const b=event.target.closest('[data-action]');if(!b)return;const action=b.dataset.action;
+  if(action==='catalog-view'){explore.view=b.dataset.view;updateExplore();}
+  else if(action==='surprise-now')generateSurprise();
+  else if(action==='surprise-again')generateSurprise(true);
+  else if(action==='notifications')openNotifications();
+  else if(action==='read-notices'){state.notifications.forEach(n=>n.read=true);persist();openNotifications();updateNotificationBadge();}
+  else if(action==='open-notice'){const n=state.notifications.find(x=>x.id===b.dataset.id);if(n){n.read=true;persist();navigate(safeReturn(n.route));}}
+  else if(action==='enable-device-notifications')enableDeviceNotifications();
+  else if(action==='calendar-plan')calendarPlan();
+  else if(action==='close-and-preferences')navigate('preferencias?volver=inicio');
+  else if(action==='confirm-reset'){state.notifications=[];state.notificationPrefs={inApp:true,device:false};state.affinity={};state.surpriseHistory=[];try{localStorage.removeItem(MYSTIGO_THEME_KEY);}catch{}applyAppearance('system');persist();localReminders();}
+});
+document.addEventListener('change',event=>{
+  const el=event.target;
+  if(el.matches('[data-theme-select]'))applyAppearance(el.value,true);
+  else if(el.id==='explore-country'){explore.country=el.value;explore.view=el.value==='Todos'?explore.view:'destinos';updateExplore();}
+  else if(el.id==='plan-country'){const list=MYSTIGO_DESTINATIONS.filter(d=>d.countryCode===el.value);$('#plan-destination').innerHTML=list.map(d=>`<option value="${d.id}">${esc(d.name)}</option>`).join('');$('#selected-activities').innerHTML=selectedText($('#plan-destination').value);}
+  else if(el.id==='in-app-notifications'){state.notificationPrefs.inApp=el.checked;persist();toast(el.checked?'Avisos de la campana activados.':'No se generarán nuevos avisos en la campana.');}
+});
+$('#modal').addEventListener('close',()=>$('#notification-button')?.setAttribute('aria-expanded','false'));
+if(systemAppearance?.addEventListener)systemAppearance.addEventListener('change',()=>{if(appearanceChoice==='system')applyAppearance('system');});
+else if(systemAppearance?.addListener)systemAppearance.addListener(()=>{if(appearanceChoice==='system')applyAppearance('system');});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')localReminders();});
+
+// Backward-compatible local-data migration; existing profiles and plans remain.
+state.prefs={...state.prefs,...readTravelPreferences({get:()=>null})};
+state.notifications=Array.isArray(state.notifications)?state.notifications.filter(n=>n&&n.id&&n.title&&n.body):[];
+state.notificationPrefs={inApp:true,device:false,...state.notificationPrefs};
+state.affinity=state.affinity&&typeof state.affinity==='object'?state.affinity:{};
+state.surpriseHistory=Array.isArray(state.surpriseHistory)?state.surpriseHistory.filter(id=>destination(id)):[];
+try{appearanceChoice=localStorage.getItem(MYSTIGO_THEME_KEY)||'system';}catch{}
+applyAppearance(appearanceChoice);
+if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js',{scope:'./'}).then(r=>{notificationWorker=r;}).catch(()=>{});
+render();localReminders();
