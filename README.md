@@ -173,3 +173,15 @@ Los nombres de autor, licencia, página del archivo y enlace de licencia tambié
 | AE | `world-ae.jpg` | Robert Bock | CC0 | [Archivo](https://commons.wikimedia.org/wiki/File:Dubai_skyline_unsplash.jpg) · [Licencia](http://creativecommons.org/publicdomain/zero/1.0/deed.en) |
 | CN | `world-cn.jpg` | N509FZ | CC BY 4.0 | [Archivo](https://commons.wikimedia.org/wiki/File:Skyline_of_Beijing_CBD_with_B-5906_approaching_(20211016171955)_(1).jpg) · [Licencia](https://creativecommons.org/licenses/by/4.0) |
 | EG | `world-eg.jpg` | Wael El Sisi | CC BY-SA 3.0 | [Archivo](https://commons.wikimedia.org/wiki/File:Cairo_From_Tower_(cropped).jpg) · [Licencia](https://creativecommons.org/licenses/by-sa/3.0) |
+
+## Sonido de notificaciones
+
+Tono original sintetizado en el dispositivo: dos notas suaves ascendentes (Mi5 y Sol♯5), con entrada gradual y desvanecimiento, de unos 0.7 segundos. No descarga audios ni utiliza servicios externos. `notification-sound.js` se carga antes de `enhancements.js`.
+
+- Suena para avisos nuevos cuando la app está visible y el visitante ya interactuó con ella. No reproduce avisos acumulados al abrir la página ni al consultar la campana.
+- La campana y Mi perfil incluyen «Sonido de notificaciones» y «Probar sonido». La preferencia se conserva en este navegador; probarlo no cambia la elección de silencio.
+- Los avisos duplicados no suenan de nuevo. Varios avisos en menos de cuatro segundos producen un solo tono. Silenciarlo detiene el tono en curso.
+- Los avisos del sistema se solicitan en silencio cuando la app está visible para evitar duplicar el tono. Con la pestaña oculta, el sistema decide su sonido si está habilitado; no se puede imponer este tono personalizado a una app cerrada.
+- El navegador puede bloquear el audio hasta que el visitante toque la app, y el volumen o modo silencioso del dispositivo también puede impedir escucharlo.
+
+Referencia técnica: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices

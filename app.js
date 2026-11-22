@@ -12,7 +12,7 @@ const paths={home:'<path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-7h6v7"/>',sear
 const icon = n=>`<svg class="icon" viewBox="0 0 24 24" aria-hidden="true">${paths[n]||paths.map}</svg>`;
 const categoryIcon={Todos:'search',Playa:'sun',Naturaleza:'leaf',Aventura:'mountain',Cultura:'culture',Gastronomía:'food',Fotografía:'camera',Descanso:'sun'};
 const KEY='mystigo.v1';
-const defaults=()=>({profile:null,prefs:{types:[],activities:[],company:'En pareja',budget:'Moderado'},favorites:[],selected:[],plans:[],events:[],opinions:[],notifications:[],notificationPrefs:{inApp:true,device:false},affinity:{},surpriseHistory:[]});
+const defaults=()=>({profile:null,prefs:{types:[],activities:[],company:'En pareja',budget:'Moderado'},favorites:[],selected:[],plans:[],events:[],opinions:[],notifications:[],notificationPrefs:{inApp:true,device:false,sound:true},affinity:{},surpriseHistory:[]});
 let state=defaults(),storageAvailable=true,currentPlan=null,toastTimer,explore={q:'',category:'Todos',zone:'Todas',budget:'Todos'};
 try{const value=JSON.parse(localStorage.getItem(KEY)||'null');if(value&&typeof value==='object'){state={...defaults(),...value,prefs:{...defaults().prefs,...value.prefs}};for(const k of ['favorites','selected','plans','events','opinions'])if(!Array.isArray(state[k]))state[k]=[];state.favorites=state.favorites.filter(id=>destination(id));state.plans=state.plans.filter(p=>p&&destination(p.dest)&&Array.isArray(p.days));}}catch{storageAvailable=false;}
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch{storageAvailable=false;toast('El navegador no permite guardar más datos. Exporta tu itinerario para conservarlo.');return false;}}
