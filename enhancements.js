@@ -23,7 +23,7 @@ function initialTravelPreferences(){return {...defaults().prefs,configured:false
 function restartTravelPreferences(){
  state.prefs=initialTravelPreferences();
  state.surpriseOffers=null;state.selected=[];state.affinity={};state.surpriseHistory=[];currentPlan=null;
- state.notifications=state.notifications.filter(n=>!(/^(offers:|preferences:|motivation:)/.test(n.id)));
+ state.notifications=state.notifications.filter(n=>n.type!=='idea'&&!(/^(offers:|preferences:|motivation:|inspiration:)/.test(n.id)));
  MystigoSound.stop();
  const saved=persist();
  render();$('#main').focus({preventScroll:true});updateNotificationBadge();
