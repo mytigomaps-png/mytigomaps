@@ -1,11 +1,11 @@
 'use strict';
 // Original Mystigo chime: two soft ascending notes, synthesized on the device.
-// No audio is queued before the visitor interacts with the page.
+// One new visible-session alert can wait for the first interaction (60s max).
 const MystigoSound=(()=>{
-  let context=null,unlocked=false,lastPlayed=-Infinity;
+  let context=null,unlocked=false,lastPlayed=-Infinity,pendingAt=null;
   const voices=new Set();
   const enabled=()=>state.notificationPrefs?.sound!==false;
-  function stop(){for(const voice of voices){try{voice.stop();}catch{}}voices.clear();}
+  function stop(){pendingAt=null;for(const voice of voices){try{voice.stop();}catch{}}voices.clear();}
   async function unlock(){
     try{
       const AudioEngine=window.AudioContext||window.webkitAudioContext;
@@ -19,9 +19,12 @@ const MystigoSound=(()=>{
   function prime(event){
     if(!event.isTrusted||!enabled()||document.visibilityState!=='visible')return;
     if(event.type==='keydown'&&(event.repeat||event.ctrlKey||event.metaKey||event.altKey))return;
-    if(!unlocked||context?.state!=='running')void unlock();
+    const preview=event.target?.closest?.('[data-action="test-notification-sound"]');
+    const pending=pendingAt;pendingAt=null;
+    if(!unlocked||context?.state!=='running'||pending!==null)void unlock().then(ready=>{if(ready&&!preview&&pending!==null&&Date.now()-pending<=60000)void play();});
   }
-  async function play({preview=false}={}){
+  async function play({preview=false,queue=false}={}){
+    if(queue&&!preview&&enabled()&&!unlocked&&document.visibilityState==='visible'){pendingAt=Date.now();return false;}
     if(document.visibilityState!=='visible'||!preview&&(!enabled()||!unlocked))return false;
     if(!preview&&Date.now()-lastPlayed<4000)return false;
     if(!await unlock())return false;

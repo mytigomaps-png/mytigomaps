@@ -18,7 +18,7 @@ try{const value=JSON.parse(localStorage.getItem(KEY)||'null');if(value&&typeof v
 function persist(){try{localStorage.setItem(KEY,JSON.stringify(state));return true;}catch{storageAvailable=false;toast('El navegador no permite guardar más datos. Exporta tu itinerario para conservarlo.');return false;}}
 function log(type,detail){state.events.unshift({type,detail,at:new Date().toISOString()});state.events=state.events.slice(0,100);persist();}
 function toast(message){clearTimeout(toastTimer);$('#toast').textContent=message;$('#toast').classList.add('visible');toastTimer=setTimeout(()=>$('#toast').classList.remove('visible'),4200);}
-const navItems=[['inicio','home','Inicio'],['explorar','search','Explorar'],['itinerarios','map','Itinerarios'],['favoritos','heart','Favoritos'],['perfil','user','Mi perfil']];
+const navItems=[['inicio','home','Inicio'],['explorar','search','Explorar'],['itinerarios','map','Mis viajes'],['favoritos','heart','Favoritos'],['perfil','user','Mi perfil']];
 function nav(active){const links=mobile=>navItems.map(([id,i,label])=>`<a href="#${id}" class="${mobile?'':'nav-link '}${active===id?'active':''}" ${active===id?'aria-current="page"':''}>${icon(i)}<span>${label}</span>${!mobile&&id==='favoritos'&&state.favorites.length?`<span class="nav-count">${state.favorites.length}</span>`:''}</a>`).join('');$('#navigation').innerHTML=links(false);$('#mobile-navigation').innerHTML=links(true);const name=state.profile?.name||'Tu espacio de viajero';$('#avatar').textContent=state.profile?.name?.trim().slice(0,1).toUpperCase()||'M';$('#profile-label').innerHTML=`${esc(name)}<small>${state.profile?'Tus preferencias y viajes':'Crea tu perfil'}</small>`;$('#header-profile').innerHTML=state.profile?`Hola, ${esc(state.profile.name.split(' ')[0])} ${icon('user')}`:'Crear mi perfil <span>↗</span>';}
 
 // Twelve independent page routes. Dialogs are used only to confirm deletion.
@@ -26,7 +26,7 @@ const SCREEN_ROUTES = Object.freeze({
   inicio:{label:'Inicio',nav:'inicio',breadcrumb:'DESCUBRE / EL MUNDO'},
   explorar:{label:'Explorar destinos',nav:'explorar',breadcrumb:'EXPLORA / DESTINOS'},
   destino:{label:'Detalles del destino',nav:'explorar',breadcrumb:'DESCUBRE / TU DESTINO'},
-  itinerarios:{label:'Crear itinerario',nav:'itinerarios',breadcrumb:'PLANIFICA / TU AVENTURA'},
+  itinerarios:{label:'Mis viajes sorpresa',nav:'itinerarios',breadcrumb:'PLANIFICA / TU AVENTURA'},
   plan:{label:'Mi itinerario',nav:'itinerarios',breadcrumb:'TU VIAJE / DÍA A DÍA'},
   favoritos:{label:'Favoritos',nav:'favoritos',breadcrumb:'GUARDA / INSPIRACIÓN'},
   perfil:{label:'Mi perfil',nav:'perfil',breadcrumb:'TU ESPACIO / VIAJERO'},
@@ -102,7 +102,7 @@ function render(){
   document.title=(screen==='destino'?destination(id).name:meta.label)+' · MYSTIGO';
   $('#main').innerHTML=html;$('#main').setAttribute('data-screen',screen);nav(meta.nav);$('#breadcrumb').textContent=meta.breadcrumb;
   if(page==='explorar')updateExplore();
-  if(page==='itinerarios')$('#selected-activities').innerHTML=selectedText($('#plan-destination').value);
+  if(page==='itinerarios'&&$('#selected-activities')&&$('#plan-destination'))$('#selected-activities').innerHTML=selectedText($('#plan-destination').value);
   if(!storageAvailable)$('#main').insertAdjacentHTML('afterbegin','<p class="notice yellow">El almacenamiento no está disponible. Descarga tus planes para conservarlos.</p>');
   if(typeof renderEnhancements==='function')renderEnhancements();
 }
@@ -133,7 +133,8 @@ document.addEventListener('submit',e=>{const form=e.target;if(!['home-search','p
   navigate(exists?back:'preferencias?volver='+encodeURIComponent(back));
   if(exists)toast('Perfil actualizado en este navegador.');
 }else if(form.id==='preferences-form'){
-  state.prefs={types:$$('[data-choice-group="types"] .choice[aria-pressed="true"]',form).map(b=>b.dataset.value),activities:$$('[data-choice-group="activities"] .choice[aria-pressed="true"]',form).map(b=>b.dataset.value),company:f.get('company'),budget:f.get('budget'),...readTravelPreferences(f)};
+  if(!$$('[data-choice-group] .choice[aria-pressed="true"]',form).length){toast('Elige al menos un gusto o una actividad para personalizar tus viajes.');return;}
+  state.prefs={types:$$('[data-choice-group="types"] .choice[aria-pressed="true"]',form).map(b=>b.dataset.value),activities:$$('[data-choice-group="activities"] .choice[aria-pressed="true"]',form).map(b=>b.dataset.value),company:f.get('company'),budget:f.get('budget'),...readTravelPreferences(f),configured:true};
   log('preferencias_actualizadas',state.prefs.types.join(', '));
   navigate(safeReturn(form.dataset.return));toast('Listo. Tus recomendaciones ya tienen tu estilo.');
 }else if(form.id==='opinion-form'){const rating=Number(f.get('rating'));if(rating<1||rating>5){toast('Elige una calificación de 1 a 5 estrellas.');return;}const name=String(f.get('name')).trim(),message=String(f.get('message')).trim();if(!name||!message){toast('Completa tu nombre y comentario.');return;}state.opinions.unshift({name,message,rating,at:new Date().toISOString()});state.opinions=state.opinions.slice(0,30);log('opinion_guardada',`${rating}/5`);render();toast('Opinión guardada en este navegador. Puedes compartirla por correo.');}});

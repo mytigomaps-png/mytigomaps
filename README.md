@@ -13,7 +13,7 @@ Cada pantalla tiene una ruta propia, navegación para avanzar y volver y present
 | 1 | Inicio | `#inicio` |
 | 2 | Explorar destinos y filtros | `#explorar` |
 | 3 | Detalles del destino y actividades | `#destino/:destino` |
-| 4 | Crear itinerario | `#itinerarios` |
+| 4 | Mis viajes sorpresa: propuestas automáticas | `#itinerarios` |
 | 5 | Ver y editar el itinerario | `#plan/:id` |
 | 6 | Favoritos | `#favoritos` |
 | 7 | Mi perfil | `#perfil` |
@@ -31,11 +31,11 @@ Al pasar de un itinerario a una solicitud, se guarda el plan para poder recargar
 
 - Inicio con recomendaciones según preferencias locales.
 - 30 países y 36 destinos con fotografías: México, Estados Unidos, República Dominicana, Colombia, Perú, Argentina, Brasil, Chile, Canadá, Costa Rica, Cuba, Panamá, Francia, España, Italia, Reino Unido, Alemania, Portugal, Grecia, Países Bajos, Suiza, Austria, Croacia, Polonia, Turquía, Tailandia, Japón, Emiratos Árabes Unidos, China y Egipto. Se conservan Cusco, Trujillo, Huaraz, Paracas, Máncora, Arequipa y Tarapoto.
-- Búsqueda por nombre, región y experiencia; filtros por categoría, zona y presupuesto diario orientativo.
-- Fichas de destinos, actividades seleccionables y ubicaciones en Google Maps.
+- Catálogo de 30 países y 36 destinos para conocer e inspirarse, sin formularios de país o región.
+- Fichas de destinos y actividades de consulta con ubicaciones en Google Maps.
 - Perfiles locales con nombre, correo opcional y preferencias de viaje.
 - Favoritos persistentes en el navegador.
-- Planificador de uno a siete días, fechas, número de personas, presupuesto total y estilo de viaje.
+- Viajes sorpresa con hasta tres propuestas completas según los gustos y presupuesto guardados una sola vez; duración de uno a siete días.
 - Itinerarios con recorridos por zonas, excursiones de jornada completa y horarios orientativos. El primer día reserva un recorrido suave por la ciudad.
 - Edición del orden de actividades, eliminación de paradas, almacenamiento local, descarga de texto e impresión a PDF desde el navegador.
 - Propuesta comercial del servicio de planificación por S/ 15. La solicitud queda pendiente de coordinación y pago y permite abrir un correo para que el usuario decida enviarlo.
@@ -104,9 +104,9 @@ La aplicación no envía datos de perfil ni eventos de navegación a un CRM. Goo
 
 ## Actualización internacional y experiencia personalizada
 
-- Catálogo por países o destinos, búsqueda por país/ciudad/experiencia y filtros por región, país, categoría y presupuesto diario orientativo en PEN.
+- Catálogo por países o destinos para consulta opcional. El viaje sorpresa no pide país, región ni destino.
 - Apariencia automática según `prefers-color-scheme`, con reacción a cambios del sistema. Opciones manuales claro, oscuro y automático; la elección se conserva localmente. Se aplica antes del primer dibujo de la página.
-- Preferencias con presupuesto del grupo en destino, días, viajeros, fecha, alcance nacional/internacional y experiencia deseada.
+- Preferencias con presupuesto del grupo en destino, días, viajeros, fecha, experiencia deseada.
 - Botón **Sorpréndeme**: selecciona un destino dentro del presupuesto estimado de estadía y actividades y crea el itinerario sin elección manual del lugar. Prioriza afinidad, meses del catálogo y variedad. Si no encuentra un destino compatible, pide ajustar los parámetros en lugar de inventar una propuesta fuera del presupuesto.
 - La experiencia deseada es elegida por la persona; no se infiere su salud ni su estado psicológico.
 - Los planes nuevos se guardan al generarlos para poder recargarlos o consultar su solicitud.
@@ -178,10 +178,21 @@ Los nombres de autor, licencia, página del archivo y enlace de licencia tambié
 
 Tono original sintetizado en el dispositivo: dos notas suaves ascendentes (Mi5 y Sol♯5), con entrada gradual y desvanecimiento, de unos 0.7 segundos. No descarga audios ni utiliza servicios externos. `notification-sound.js` se carga antes de `enhancements.js`.
 
-- Suena para avisos nuevos cuando la app está visible y el visitante ya interactuó con ella. No reproduce avisos acumulados al abrir la página ni al consultar la campana.
+- Suena para avisos nuevos cuando la app está visible y el visitante ya interactuó con ella. No reproduce avisos históricos acumulados al abrir la página ni al consultar la campana. Un aviso nuevo de la sesión puede esperar hasta 60 segundos al primer toque para sonar, respetando el bloqueo de audio del navegador.
 - La campana y Mi perfil incluyen «Sonido de notificaciones» y «Probar sonido». La preferencia se conserva en este navegador; probarlo no cambia la elección de silencio.
 - Los avisos duplicados no suenan de nuevo. Varios avisos en menos de cuatro segundos producen un solo tono. Silenciarlo detiene el tono en curso.
 - Los avisos del sistema se solicitan en silencio cuando la app está visible para evitar duplicar el tono. Con la pestaña oculta, el sistema decide su sonido si está habilitado; no se puede imponer este tono personalizado a una app cerrada.
 - El navegador puede bloquear el audio hasta que el visitante toque la app, y el volumen o modo silencioso del dispositivo también puede impedir escucharlo.
 
 Referencia técnica: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices
+
+## Recorrido pedido por el cliente — noviembre de 2026
+
+- Una sola sección (`#preferencias`) recoge gustos, actividades, presupuesto disponible del grupo, estilo, duración, viajeros, fecha preferida y experiencia deseada. No solicita ingresos ni datos financieros privados. Basta seleccionar al menos un gusto o actividad para personalizar. Los perfiles anteriores con intereses guardados se conservan.
+- El inicio y Mis viajes eliminan la búsqueda y el formulario de planificación manual. Un botón prepara hasta tres viajes completos y distintos. No se pide elegir país, región, destino ni repetir datos del viaje.
+- Las propuestas deben coincidir con al menos uno de los tipos de viaje guardados (o actividades si no hay tipos) y caber en el presupuesto de estadía y actividades. Si solo hay una o dos opciones válidas, se informa; no se inventan opciones o precios. Si no hay ninguna, se vuelve a la misma sección de preferencias.
+- «Quiero viajar este fin de semana» prepara propuestas desde el próximo sábado, con un máximo de dos días y el resto de las preferencias guardadas. La fecha preferida se usa en la opción general.
+- Cada propuesta incluye fotografía, motivos de afinidad, fecha, viajeros, estimación y recorrido ya construido. Abrirla guarda el plan; las propuestas también sobreviven a una recarga. Pedir otras ofrece variedad sin salir de los gustos y presupuesto.
+- La campana incluye un aviso diario motivador que invita a viajar y abre Mis viajes. Los avisos nuevos utilizan el tono de Mystigo, con silencio opcional, límite de frecuencia y habilitación del audio mediante interacción del visitante.
+- Las notificaciones se comprueban al entrar, volver a la pestaña y una vez por minuto mientras está visible; cada aviso diario se guarda una sola vez. No existe servidor de push para la web cerrada. Se mantiene el recordatorio de calendario.
+- Se mantienen las 12 rutas, los 30 países, las fotografías, el modo automático de color y los planes antiguos. El catálogo es informativo y opcional, fuera del recorrido de generación automática.
