@@ -196,3 +196,9 @@ Referencia técnica: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_
 - La campana incluye un aviso diario motivador que invita a viajar y abre Mis viajes. Los avisos nuevos utilizan el tono de Mystigo, con silencio opcional, límite de frecuencia y habilitación del audio mediante interacción del visitante.
 - Las notificaciones se comprueban al entrar, volver a la pestaña y una vez por minuto mientras está visible; cada aviso diario se guarda una sola vez. No existe servidor de push para la web cerrada. Se mantiene el recordatorio de calendario.
 - Se mantienen las 12 rutas, los 30 países, las fotografías, el modo automático de color y los planes antiguos. El catálogo es informativo y opcional, fuera del recorrido de generación automática.
+
+## Reiniciar el formulario y volver a entrar
+
+- El campo muestra «Correo electrónico», sin la palabra «opcional». Puede seguir dejándose vacío; no se agregó validación obligatoria ni se cambió el envío de datos.
+- Al abrir o recargar la app sin preferencias guardadas, se vuelve a Inicio. Lo mismo ocurre al restaurar una página de la memoria de navegación. Los cambios que no se guardaron no se utilizan como preferencias.
+- «Reiniciar», junto a «Volver» en Preferencias de viaje, limpia las selecciones del formulario y repone los valores iniciales de presupuesto, viajeros, duración y fecha. Es un borrador: no borra el perfil, favoritos, viajes ni preferencias previamente guardadas. Al pulsar «Guardar mis preferencias», se reemplazan las preferencias y se preparan nuevas propuestas automáticamente al volver a Mis viajes.
