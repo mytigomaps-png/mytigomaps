@@ -19,8 +19,18 @@ const systemAppearance=window.matchMedia?window.matchMedia('(prefers-color-schem
 
 function nextWeekendDate(){const day=new Date(today()+'T12:00:00').getDay();return datePlus(today(),(6-day+7)%7);}
 function hasTravelPreferences(){return !!hasSavedTravelPreferences();}
-function initialTravelPreferences(){return {...defaults().prefs,tripBudget:1500,tripDays:3,people:1,mood:'Descansar',scope:'Todos',travelDate:nextWeekendDate()};}
-function preferenceSummary(){const p=travelDefaults();return `<div class="surprise-summary"><span>${money(p.tripBudget)} en destino</span><span>${p.tripDays} días</span><span>${p.people} viajero(s)</span><span>${esc([...state.prefs.types,...state.prefs.activities].join(' · ')||'Tus preferencias por registrar')}</span></div>`;}
+function initialTravelPreferences(){return {...defaults().prefs,configured:false,tripBudget:1500,tripDays:3,people:1,mood:'Descansar',scope:'Todos',travelDate:nextWeekendDate()};}
+function restartTravelPreferences(){
+ state.prefs=initialTravelPreferences();
+ state.surpriseOffers=null;state.selected=[];state.affinity={};state.surpriseHistory=[];currentPlan=null;
+ state.notifications=state.notifications.filter(n=>!(/^(offers:|preferences:|motivation:)/.test(n.id)));
+ MystigoSound.stop();
+ const saved=persist();
+ render();$('#main').focus({preventScroll:true});updateNotificationBadge();
+ toast(saved?'Preferencias reiniciadas. Elige y guarda tus gustos para recibir nuevas propuestas.':'Preferencias reiniciadas en esta sesión. El navegador no permitió guardar el reinicio; al volver podrían aparecer los datos anteriores.');
+ return saved;
+}
+function preferenceSummary(){if(!hasTravelPreferences())return '<p class="storage-note">Aún no has guardado tus gustos y presupuesto.</p>';const p=travelDefaults();return `<div class="surprise-summary"><span>${money(p.tripBudget)} en destino</span><span>${p.tripDays} días</span><span>${p.people} viajero(s)</span><span>${esc([...state.prefs.types,...state.prefs.activities].join(' · '))}</span></div>`;}
 function readTravelPreferences(form){
   const clamp=(v,min,max,fallback)=>{const n=Number(v);return Number.isFinite(n)&&n>=min&&n<=max?n:fallback;};
   const mood=String(form.get('mood')||state.prefs.mood||'Descansar');
@@ -89,7 +99,7 @@ updateExplore=function(){
 details=function(d){let html=priorDetails(d);html=html.replace('<section class="panel"><div class="eyebrow">DÉJATE SORPRENDER',`<section class="panel">${photoCredit(d)}<div class="eyebrow">DÉJATE SORPRENDER`);html=html.replace('Agrega tus lugares preferidos y úsalos al planificar tu recorrido.','Conoce algunas experiencias del catálogo. Mystigo organiza automáticamente las actividades en tus viajes sorpresa.').replace(/<button class="add-activity[^>]*>[\s\S]*?<\/button>/g,'').replace(/<a href="#itinerarios\?destino=[^>]+>Crear mi itinerario[^<]*(?:<[^>]+>[^<]*<\/[^>]+>)?<\/a>/g,'<button class="button" data-action="surprise-now">Preparar mis viajes sorpresa</button>');return html;};
 
 function travelPreferenceFields(draft){const p=draft||travelDefaults();return `<fieldset class="preference-fieldset travel-preferences"><legend>Tus gustos y presupuesto, en un solo lugar</legend><div class="form-grid"><div class="field"><label for="pref-trip-budget">Presupuesto del grupo en destino (S/)</label><input id="pref-trip-budget" name="tripBudget" type="number" min="50" max="1000000" step="1" value="${p.tripBudget}" required></div><div class="field"><label for="pref-trip-days">Días de viaje</label><select id="pref-trip-days" name="tripDays">${[1,2,3,4,5,6,7].map(n=>`<option value="${n}" ${n===p.tripDays?'selected':''}>${n} ${n===1?'día':'días'}</option>`).join('')}</select></div><div class="field"><label for="pref-people">Viajeros</label><input id="pref-people" name="people" type="number" min="1" max="20" value="${p.people}" required></div><div class="field"><label for="pref-travel-date">Fecha preferida para viajar</label><input id="pref-travel-date" name="travelDate" type="date" value="${p.travelDate}" min="${today()}"></div><div class="field"><label for="pref-mood">¿Qué te apetece en este viaje?</label><select id="pref-mood" name="mood">${Object.keys(MYSTIGO_MOODS).map(m=>`<option ${m===p.mood?'selected':''}>${m}</option>`).join('')}</select></div></div><div class="notice spacer-top">El presupuesto es para estadía y actividades. Los vuelos o pasajes para llegar al destino se calculan aparte. La fecha ayuda a priorizar épocas orientativas; no es un pronóstico del tiempo.</div></fieldset>`;}
-preferencesView=function(params,restart=false){const draft=restart?initialTravelPreferences():null;return priorPreferencesView(params,draft||state.prefs).replace('<div class="form-actions">',travelPreferenceFields(draft)+'<div class="form-actions">').replace('Hay un Perú','Hay un mundo').replace('Elige tus intereses y descubre destinos que van contigo.','Registra aquí tus gustos, preferencias y presupuesto una sola vez. Luego Mystigo preparará tus opciones automáticamente.');};
+preferencesView=function(params){return priorPreferencesView(params).replace('<div class="form-actions">',travelPreferenceFields()+'<div class="form-actions">').replace('Hay un Perú','Hay un mundo').replace('Elige tus intereses y descubre destinos que van contigo.','Registra aquí tus gustos, preferencias y presupuesto una sola vez. Luego Mystigo preparará tus opciones automáticamente.');};
 
 planner=function(){
  if(!hasTravelPreferences())return `${title('PRIMERO TE CONOCEMOS. DESPUÉS TE SORPRENDEMOS.','Una sola vez: tus gustos y presupuesto.','Mystigo necesita conocerte para preparar opciones que se parezcan a ti.')}<section class="panel automatic-intro"><h2>Tu próxima escapada empieza aquí.</h2><p>Registra tus preferencias en una sola sección. Después podrás pulsar un botón y recibir varias propuestas completas sin elegir país, región o destino.</p><a class="button yellow" href="#preferencias?volver=itinerarios">Registrar mis gustos y presupuesto</a></section>${savedPlans()}`;
@@ -116,6 +126,7 @@ function surpriseCandidates(options=travelDefaults()){
 }
 function surpriseSignature(options,mode){return JSON.stringify({options,mode,types:state.prefs.types,activities:state.prefs.activities});}
 function prepareSurpriseOffers(force=false,mode=state.surpriseOffers?.mode||'saved'){
+ if(!hasTravelPreferences())return null;
  const p=travelDefaults(),options=mode==='weekend'?{...p,travelDate:nextWeekendDate(),tripDays:Math.min(2,p.tripDays)}:p,signature=surpriseSignature(options,mode);
  const previous=state.surpriseOffers;
  if(!force&&previous?.signature===signature&&Array.isArray(previous.plans)&&previous.plans.every(plan=>destination(plan.dest)&&plan.date>=today()))return previous;
@@ -132,6 +143,7 @@ function generateSurprise(mode='saved'){
  navigate('itinerarios');
 }
 function chooseSurprise(id){
+ if(!hasTravelPreferences()){generateSurprise();return;}
  const batch=state.surpriseOffers,plan=batch?.plans?.find(p=>p.id===id);
  if(!plan||batch.signature!==surpriseSignature(batch.options,batch.mode)||plan.date<today()){toast('Vamos a actualizar tus propuestas.');generateSurprise();return;}
  // Discard offers if stored preferences changed before choosing.
@@ -188,13 +200,13 @@ function renderEnhancements(){
   const profileButton=$('#header-profile');if(profileButton)profileButton.innerHTML=state.profile?`Hola, ${esc(state.profile.name.split(' ')[0])} ${icon('user')}`:'Crear mi perfil';
 }
 function notificationSettings(){return `<section class="panel preferences-settings"><h2>Tu experiencia en Mystigo.</h2><div class="settings-grid"><div class="field"><label for="profile-theme">Apariencia</label><select id="profile-theme" data-theme-select><option value="system">Según mi dispositivo</option><option value="light">Modo claro</option><option value="dark">Modo oscuro</option></select><p>El modo automático cambia con la configuración de tu celular o navegador.</p></div><div><h3>Avisos de viaje</h3><label class="checkbox-line"><input id="in-app-notifications" type="checkbox" ${state.notificationPrefs.inApp?'checked':''}> Recibir avisos en la campana de Mystigo</label><button class="button outline small spacer-top" data-action="enable-device-notifications">Activar avisos del dispositivo</button><p class="storage-note">El navegador te pedirá permiso. Los avisos se generan al abrir la app o mientras la usas. Para recordatorios con la app cerrada, utiliza el calendario.</p>${notificationSoundControls('profile-sound')}</div></div></section>`;}
-profileView=function(){const p=travelDefaults();return priorProfileView()+`<section class="panel spacer-top"><div class="section-heading" style="margin-top:0"><div><h2>Tu próximo viaje sorpresa.</h2><p>Con tus preferencias guardadas, Mystigo puede elegir por ti.</p></div><a class="text-link" href="#preferencias?volver=perfil">Editar</a></div><div class="surprise-summary"><span>${money(p.tripBudget)} en destino</span><span>${p.tripDays} días</span><span>${p.people} viajero(s)</span><span>${esc(p.mood)}</span></div><button class="button yellow spacer-top" data-action="surprise-now">Prepárame un viaje sorpresa</button></section>${notificationSettings()}`;};
+profileView=function(){return priorProfileView()+`<section class="panel spacer-top"><div class="section-heading" style="margin-top:0"><div><h2>Tu próximo viaje sorpresa.</h2><p>${hasTravelPreferences()?'Con tus preferencias guardadas, Mystigo puede elegir por ti.':'Registra tus gustos y presupuesto para recibir nuevas propuestas.'}</p></div><a class="text-link" href="#preferencias?volver=perfil">${hasTravelPreferences()?'Editar':'Registrar mis preferencias'}</a></div>${preferenceSummary()}<button class="button yellow spacer-top" data-action="surprise-now">Prepárame un viaje sorpresa</button></section>${notificationSettings()}`;};
 helpView=function(){return priorHelpView().replace('Una aplicación para descubrir destinos turísticos del Perú','Una aplicación para descubrir destinos turísticos de 30 países').replace('Esta versión organiza las sugerencias a partir de tus preferencias y un catálogo de rutas. No utiliza un servicio de inteligencia artificial externo.','Mystigo calcula la afinidad entre tus preferencias, favoritos y destinos. Considera presupuesto, fecha y lo que te apetece para preparar viajes sorpresa. El recomendador funciona en tu dispositivo; no utiliza un servicio generativo externo.')+`<section class="panel spacer-top"><h2>Tu experiencia de viajes sorpresa.</h2><details class="faq"><summary>¿Tengo que elegir país o completar otro formulario?</summary><p>No. Tus gustos, preferencias y presupuesto se registran una sola vez en Preferencias de viaje. Después pulsa «Prepárame un viaje sorpresa» y Mystigo prepara hasta tres opciones completas. El botón para este fin de semana usa el próximo sábado y hasta dos días. Si solo hay una o dos opciones compatibles con tus gustos y presupuesto, verás únicamente esas.</p></details><details class="faq"><summary>¿El viaje sorpresa respeta mi presupuesto?</summary><p>Se elige entre propuestas cuyo estimado para estadía y actividades cabe en el presupuesto del grupo. Los vuelos y pasajes hacia el destino, así como las reservas especiales, se pagan aparte y deben verificarse.</p></details><details class="faq"><summary>¿Los avisos llegan con la app cerrada?</summary><p>La campana reúne avisos locales. Con permiso, Mystigo también puede mostrar avisos del dispositivo cuando se generan al abrir o usar la app. No existe un servidor de notificaciones push ni envío automático con la web cerrada. Para un recordatorio futuro, descarga el archivo de calendario desde tu itinerario y guárdalo en tu calendario.</p></details><details class="faq"><summary>¿La temporada es información en vivo?</summary><p>No. La fecha ayuda a priorizar meses orientativos de viaje del catálogo. Confirma clima, accesos y disponibilidad antes de reservar. No se ofrecen pronósticos ni ofertas comerciales en tiempo real.</p></details></section>`;};
 
 document.addEventListener('click',event=>{
   const b=event.target.closest('[data-action]');if(!b)return;const action=b.dataset.action;
   if(action==='catalog-view'){explore.view=b.dataset.view;updateExplore();}
-  else if(action==='restart-preferences'){const main=$('#main');main.innerHTML=preferencesView(routeInfo().params,true);main.focus({preventScroll:true});toast('Formulario reiniciado. Elige tus gustos y guarda para recibir nuevas recomendaciones.');}
+  else if(action==='restart-preferences')restartTravelPreferences();
   else if(action==='surprise-now')generateSurprise();
   else if(action==='surprise-again'||action==='surprise-more')generateSurprise(state.surpriseOffers?.mode||'saved');
   else if(action==='surprise-weekend')generateSurprise('weekend');
@@ -222,7 +234,7 @@ setInterval(()=>{if(document.visibilityState==='visible')localReminders();},6000
 
 // Backward-compatible local-data migration; existing profiles and plans remain.
 state.prefs={...state.prefs,...readTravelPreferences({get:()=>null})};
-state.surpriseOffers=state.surpriseOffers&&Array.isArray(state.surpriseOffers.plans)?state.surpriseOffers:null;
+state.surpriseOffers=hasTravelPreferences()&&state.surpriseOffers&&Array.isArray(state.surpriseOffers.plans)?state.surpriseOffers:null;
 state.notifications=Array.isArray(state.notifications)?state.notifications.filter(n=>n&&n.id&&n.title&&n.body):[];
 state.notificationPrefs={inApp:true,device:false,sound:true,...state.notificationPrefs};
 state.affinity=state.affinity&&typeof state.affinity==='object'?state.affinity:{};

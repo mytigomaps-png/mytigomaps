@@ -141,7 +141,7 @@ document.addEventListener('submit',e=>{const form=e.target;if(!['home-search','p
 }else if(form.id==='opinion-form'){const rating=Number(f.get('rating'));if(rating<1||rating>5){toast('Elige una calificación de 1 a 5 estrellas.');return;}const name=String(f.get('name')).trim(),message=String(f.get('message')).trim();if(!name||!message){toast('Completa tu nombre y comentario.');return;}state.opinions.unshift({name,message,rating,at:new Date().toISOString()});state.opinions=state.opinions.slice(0,30);log('opinion_guardada',`${rating}/5`);render();toast('Opinión guardada en este navegador. Puedes compartirla por correo.');}});
 $('#modal').addEventListener('click',e=>{if(e.target===$('#modal'))$('#modal').close();});
 window.addEventListener('hashchange',()=>{render();window.scrollTo({top:0,behavior:'instant'});$('#main').focus({preventScroll:true});});
-function hasSavedTravelPreferences(){return state.prefs.configured===true||((Array.isArray(state.prefs.types)&&state.prefs.types.length||Array.isArray(state.prefs.activities)&&state.prefs.activities.length)&&Number(state.prefs.tripBudget)>=50);}
+function hasSavedTravelPreferences(){if(state.prefs.configured===false)return false;return state.prefs.configured===true||((Array.isArray(state.prefs.types)&&state.prefs.types.length||Array.isArray(state.prefs.activities)&&state.prefs.activities.length)&&Number(state.prefs.tripBudget)>=50);}
 function restoreEntryScreen(){if(!hasSavedTravelPreferences()&&location.hash!=='#inicio')history.replaceState(null,'','#inicio');}
 window.addEventListener('pageshow',event=>{if(event.persisted){restoreEntryScreen();render();}});
 restoreEntryScreen();

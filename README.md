@@ -201,4 +201,10 @@ Referencia técnica: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_
 
 - El campo muestra «Correo electrónico», sin la palabra «opcional». Puede seguir dejándose vacío; no se agregó validación obligatoria ni se cambió el envío de datos.
 - Al abrir o recargar la app sin preferencias guardadas, se vuelve a Inicio. Lo mismo ocurre al restaurar una página de la memoria de navegación. Los cambios que no se guardaron no se utilizan como preferencias.
-- «Reiniciar», junto a «Volver» en Preferencias de viaje, limpia las selecciones del formulario y repone los valores iniciales de presupuesto, viajeros, duración y fecha. Es un borrador: no borra el perfil, favoritos, viajes ni preferencias previamente guardadas. Al pulsar «Guardar mis preferencias», se reemplazan las preferencias y se preparan nuevas propuestas automáticamente al volver a Mis viajes.
+- «Reiniciar», junto a «Volver» en Preferencias de viaje, elimina las preferencias guardadas y las propuestas pendientes, limpia las selecciones y repone el presupuesto, viajeros, duración y fecha iniciales. El cambio se guarda inmediatamente: volver, navegar o recargar ya no recupera el resumen anterior. Inicio, Mi perfil y Mis viajes piden registrar las preferencias otra vez.
+- Se descartan los avisos de recomendaciones anteriores y los datos de selección y afinidad asociados. Se conservan el perfil, favoritos, itinerarios ya guardados, solicitudes, opiniones, apariencia y ajustes de sonido. Los viajes guardados pueden seguir abriéndose.
+- Las nuevas propuestas solo se generan después de elegir al menos un gusto o actividad y pulsar «Guardar mis preferencias». Si el navegador bloquea el almacenamiento, se avisa expresamente de que el reinicio solo se aplicó a la sesión.
+
+## Pruebas de regresión
+
+Ejecuta `node test-client.cjs` con Node.js, sin instalar dependencias. Comprueba los eventos reales de reinicio y guardado, almacenamiento, regreso y recarga, las 12 rutas, conservación de viajes y otros datos, bloqueo de propuestas anteriores, validaciones de gustos, presupuesto y duración, 30 países con imágenes locales, migración y sonido con silencio y deduplicación. La revisión del navegador se realiza aparte sobre la app publicada.
