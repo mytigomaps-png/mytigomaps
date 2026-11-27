@@ -1,0 +1,16 @@
+{
+  "holder": "MYSTIGO DEMO",
+  "phone": "000 000 000",
+  "account": "0000000000000",
+  "cci": "00000000000000000000",
+  "wallets": {
+    "Yape": {
+      "qr": "payment-demo-qr-yape.svg",
+      "payload": "MYSTIGO | DEMOSTRACION | YAPE | IMPORTE S/ 15 | SIN TRANSACCION REAL"
+    },
+    "Plin": {
+      "qr": "payment-demo-qr-plin.svg",
+      "payload": "MYSTIGO | DEMOSTRACION | PLIN | IMPORTE S/ 15 | SIN TRANSACCION REAL"
+    }
+  }
+}

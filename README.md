@@ -225,7 +225,7 @@ Archivos: `blue-theme.css` y `journey-streak.js`; `index.html` carga sus version
 
 Se ofrecen los mismos seis medios de DogSpot: Yape, Plin, BCP, Interbank, BBVA y Scotiabank. El servicio de planificación mantiene un precio de S/ 15 para los 30 países, separado del presupuesto del viaje. Inicio muestra los medios; al abrir el resumen de una solicitud se elige uno y se conserva en el itinerario. La confirmación y el borrador del correo incluyen el medio elegido. Las solicitudes antiguas siguen disponibles, mostrando «Por elegir» cuando no tienen un medio.
 
-La selección no acredita cobro ni reserva. El estado se conserva como pendiente y se coordina el número, QR o cuenta con Mystigo. No se copian datos bancarios de DogSpot, no se inventan cuentas y no se piden credenciales. La aplicación no procesa transacciones.
+La selección no acredita cobro ni reserva. El estado interno se conserva como pendiente. Los medios muestran referencias ficticias para una demostración: titular MYSTIGO DEMO, celular 000 000 000, cuenta 0000000000000 y CCI 00000000000000000000, idéntico para los cuatro bancos. Yape y Plin incluyen QR de prueba generados con texto de demostración, sin instrucciones de transferencia ni destino bancario. No se piden credenciales ni se procesan transacciones. Las referencias y los contenidos de los QR se documentan en payment-demo-data.json.
 
 Archivos: `payments.js` y `payments.css`, con validación del medio en la acción de guardar solicitud en `app.js`. Pruebas: `node test-payments.cjs`, además de las comprobaciones de preferencias y racha.
 
