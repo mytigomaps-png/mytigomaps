@@ -9,7 +9,7 @@ function boot(saved,initialHash=''){
  const window={AudioContext:Engine,matchMedia(){return{matches:false,addEventListener(){}};},addEventListener(t,f){(events[t]??=[]).push(f);},scrollTo(){}};
  const context={document,window,location:{hash:initialHash},navigator:{},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},URLSearchParams,Date,Math,crypto,console,FormData:class{constructor(form){this.data=form.data||{};}get(k){return this.data[k]??null;}},setTimeout(){return 1;},clearTimeout(){},setInterval(){return 1;}};
  context.history={replaceState(_state,_unused,hash){context.location.hash=hash;}};
- vm.createContext(context);for(const f of ['destinations.js','world.js','app.js','notification-sound.js','enhancements.js','journey-streak.js'])vm.runInContext(fs.readFileSync(f,'utf8'),context,{filename:f});
+ vm.createContext(context);for(const f of ['destinations.js','world.js','app.js','notification-sound.js','enhancements.js','journey-streak.js','payments.js'])vm.runInContext(fs.readFileSync(f,'utf8'),context,{filename:f});
  return{context,storage,els,events,voices,run:s=>vm.runInContext(s,context)};
 }
 const flush=async()=>{for(let n=0;n<6;n++)await Promise.resolve();};
@@ -58,7 +58,7 @@ if(require.main===module)(async()=>{
  reopened.context.location.hash='#preferencias';reopened.events.pageshow[0]({persisted:true});assert.equal(reopened.context.location.hash,'#inicio');
  const pId=reopened.run('state.plans[0].id');
  for(const path of ['plan','solicitud','confirmacion']){reopened.context.location.hash='#'+path+'/'+pId;reopened.run('render()');assert.equal(reopened.els['#main']['data-screen'],path);assert(!reopened.els['#main'].innerHTML.includes('No encontramos'));}
- click(reopened,'confirm-request',pId);reopened.run('render()');assert.equal(reopened.run('state.plans[0].status'),'requested');assert(/solicitud guardada/i.test(reopened.els['#main'].innerHTML));
+ reopened.run("selectPaymentMethod("+JSON.stringify(pId)+",'Yape')");click(reopened,'confirm-request',pId);reopened.run('render()');assert.equal(reopened.run('state.plans[0].status'),'requested');assert(/solicitud guardada/i.test(reopened.els['#main'].innerHTML));
  // Exercise the real submit listener, including the empty-interest guard.
  const form={id:'preferences-form',dataset:{return:'itinerarios'},reportValidity:()=>true,data:{company:'Solo',budget:'Moderado',tripBudget:'6000',tripDays:'2',people:'1',mood:'Descubrir cultura',travelDate:reopened.run('nextWeekendDate()')},querySelectorAll:()=>[]};
  const submit=()=>{for(const handler of reopened.events.submit)handler({target:form,preventDefault(){}});};

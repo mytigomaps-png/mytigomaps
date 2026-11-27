@@ -219,3 +219,12 @@ La racha está disponible desde la llama del encabezado y desde Inicio, Mis viaj
 Los registros se guardan en `travelDays` dentro de `mystigo.v1`, sin modificar los perfiles o viajes anteriores. Reiniciar preferencias conserva la racha; borrar todos los datos locales la elimina. Los registros persisten al recargar en el mismo navegador, sin sincronización entre dispositivos.
 
 Archivos: `blue-theme.css` y `journey-streak.js`; `index.html` carga sus versiones y renueva los identificadores de caché. Verificación: `node test-client.cjs` y `node test-streak.cjs`.
+
+
+## Métodos de pago de la planificación
+
+Se ofrecen los mismos seis medios de DogSpot: Yape, Plin, BCP, Interbank, BBVA y Scotiabank. El servicio de planificación mantiene un precio de S/ 15 para los 30 países, separado del presupuesto del viaje. Inicio muestra los medios; al abrir el resumen de una solicitud se elige uno y se conserva en el itinerario. La confirmación y el borrador del correo incluyen el medio elegido. Las solicitudes antiguas siguen disponibles, mostrando «Por elegir» cuando no tienen un medio.
+
+La selección no acredita cobro ni reserva. El estado se conserva como pendiente y se coordina el número, QR o cuenta con Mystigo. No se copian datos bancarios de DogSpot, no se inventan cuentas y no se piden credenciales. La aplicación no procesa transacciones.
+
+Archivos: `payments.js` y `payments.css`, con validación del medio en la acción de guardar solicitud en `app.js`. Pruebas: `node test-payments.cjs`, además de las comprobaciones de preferencias y racha.
