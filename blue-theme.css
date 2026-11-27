@@ -109,3 +109,25 @@ html[data-theme="dark"] .streak-week .done .streak-day{border-color:#6e9dff}
 @media print{.streak-preview,.header-streak,.streak-full{display:none!important}}
 
 @media(max-width:380px){.topbar{gap:5px;padding-left:10px;padding-right:10px}.topbar .top-actions{gap:5px}.mobile-brand{font-size:14px;gap:4px}.mobile-brand img{width:30px;height:30px}.appearance-control select{max-width:94px;padding-left:6px;padding-right:17px;font-size:11px}.header-streak{min-width:39px;padding:0 5px}.streak-preview .streak-week{gap:3px}}
+
+/* Keep every desktop sidebar control reachable on short laptop displays. */
+@media screen and (min-width:601px){
+  .sidebar{overflow-y:auto;overflow-x:hidden;overscroll-behavior-y:contain;scrollbar-width:thin}
+  .sidebar>*{flex-shrink:0}
+}
+@media screen and (min-width:901px){
+  .sidebar-promo{display:block;flex-shrink:0}
+  .sidebar-promo:focus-visible{outline:3px solid var(--yellow);outline-offset:3px}
+  .sidebar-promo .button{gap:7px}
+}
+@media screen and (min-width:901px) and (max-height:850px){
+  .sidebar .brand{margin-bottom:22px}
+  .sidebar .nav-caption{margin-bottom:10px}
+  .sidebar #navigation{gap:4px}
+  .sidebar .nav-link{padding:10px 14px}
+  .sidebar-promo{margin:18px 0 16px;padding:16px 14px;border-radius:15px}
+  .sidebar-promo .spark,.sidebar-promo>p,.sidebar-promo>small{display:none}
+  .sidebar-promo h3{font-size:18px;line-height:1.25;margin:0 0 12px}
+  .sidebar-promo .button{font-size:11px;padding:11px 8px;min-height:38px}
+  .sidebar .help-link{margin-bottom:14px}
+}
