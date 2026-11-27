@@ -123,7 +123,7 @@ profileFormView=function(params){
   const back=safeReturn(params.get('volver'),state.profile?'perfil':'inicio');
   let html=profileFormBeforeStreak(params);
   if(back==='itinerarios?racha=1')html=html.replace('Continuar a mis preferencias',guestTravelDays.length?'Crear perfil y guardar mi racha':'Crear perfil y volver a mi racha').replace('Tus preferencias','Tu racha');
-  if(!state.profile&&guestTravelDays.length)html=`<div class="notice">Al crear tu perfil se guardarán los ${guestTravelDays.length} ${guestTravelDays.length===1?'día que ya registraste':'días que ya registraste'} en tu racha temporal.</div>`+html;
+  if(!state.profile&&guestTravelDays.length)html=`<div class="notice">Al crear tu perfil ${guestTravelDays.length===1?'se guardará el día que ya registraste':`se guardarán los ${guestTravelDays.length} días que ya registraste`} en tu racha temporal.</div>`+html;
   if(!state.profile&&streakProfiles().length)html=`<div class="notice streak-existing-profile">¿Ya creaste tu perfil? <a href="${streakProfileLink('entrar',back)}">Entra a tu perfil guardado para recuperar tu racha.</a></div>`+html;
   return html;
 };
