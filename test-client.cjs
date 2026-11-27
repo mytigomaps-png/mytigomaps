@@ -9,11 +9,12 @@ function boot(saved,initialHash=''){
  const window={AudioContext:Engine,matchMedia(){return{matches:false,addEventListener(){}};},addEventListener(t,f){(events[t]??=[]).push(f);},scrollTo(){}};
  const context={document,window,location:{hash:initialHash},navigator:{},localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},URLSearchParams,Date,Math,crypto,console,FormData:class{constructor(form){this.data=form.data||{};}get(k){return this.data[k]??null;}},setTimeout(){return 1;},clearTimeout(){},setInterval(){return 1;}};
  context.history={replaceState(_state,_unused,hash){context.location.hash=hash;}};
- vm.createContext(context);for(const f of ['destinations.js','world.js','app.js','notification-sound.js','enhancements.js'])vm.runInContext(fs.readFileSync(f,'utf8'),context,{filename:f});
+ vm.createContext(context);for(const f of ['destinations.js','world.js','app.js','notification-sound.js','enhancements.js','journey-streak.js'])vm.runInContext(fs.readFileSync(f,'utf8'),context,{filename:f});
  return{context,storage,els,events,voices,run:s=>vm.runInContext(s,context)};
 }
 const flush=async()=>{for(let n=0;n<6;n++)await Promise.resolve();};
-(async()=>{
+module.exports={boot};
+if(require.main===module)(async()=>{
  const t=boot();assert(!t.run('hasTravelPreferences()'));t.run('generateSurprise()');assert.equal(t.context.location.hash,'#preferencias?volver=itinerarios');
  assert(!/<form|explore-country|explore-zone|home-search/.test(t.run('home()')));
  assert(!/<input|<select|<form/.test(t.run('planner()')));

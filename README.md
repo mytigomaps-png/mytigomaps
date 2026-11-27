@@ -208,3 +208,14 @@ Referencia técnica: https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_
 ## Pruebas de regresión
 
 Ejecuta `node test-client.cjs` con Node.js, sin instalar dependencias. Comprueba los eventos reales de reinicio y guardado, almacenamiento, regreso y recarga, las 12 rutas, conservación de viajes y otros datos, bloqueo de propuestas anteriores, validaciones de gustos, presupuesto y duración, 30 países con imágenes locales, migración y sonido con silencio y deduplicación. La revisión del navegador se realiza aparte sobre la app publicada.
+
+
+## Paleta azul y racha de viajes
+
+Actualización solicitada por el cliente: cuatro tonos de azul (marino `#102f63`, real `#0640a2`, intenso `#1459e5` y claro `#3478f6`), fondo blanco en modo claro y detalles amarillos. Se conservan el modo oscuro y automático, las 12 rutas, el reinicio de preferencias y los datos anteriores.
+
+La racha está disponible desde la llama del encabezado y desde Inicio, Mis viajes y Mi perfil. En Mis viajes → Mi racha, el visitante elige un destino y registra voluntariamente su viaje de hoy. Suma como máximo un día local por fecha; no se genera por abrir la app, crear planes, comprar ni autorizar ubicación. Son registros personales, no viajes verificados. Un día sin registro corta la racha actual, conservando la mejor marca, logros e historial. Se muestran los últimos siete días y metas de 1, 3, 7, 14 y 30 días consecutivos.
+
+Los registros se guardan en `travelDays` dentro de `mystigo.v1`, sin modificar los perfiles o viajes anteriores. Reiniciar preferencias conserva la racha; borrar todos los datos locales la elimina. Los registros persisten al recargar en el mismo navegador, sin sincronización entre dispositivos.
+
+Archivos: `blue-theme.css` y `journey-streak.js`; `index.html` carga sus versiones y renueva los identificadores de caché. Verificación: `node test-client.cjs` y `node test-streak.cjs`.
