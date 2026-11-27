@@ -2,18 +2,18 @@
 // A preferred payment method is recorded; this static app does not process funds.
 const MYSTIGO_PLANNING_FEE=15;
 const MYSTIGO_PAYMENT_METHODS=Object.freeze([
-  {id:'Yape',kind:'wallet',mark:'Y',color:'yape',caption:'Billetera digital',detail:'Solicita a Mystigo su número o QR de Yape para coordinar el pago de la planificación.'},
-  {id:'Plin',kind:'wallet',mark:'P',color:'plin',caption:'Desde tu app bancaria',detail:'Solicita a Mystigo el número de celular para coordinar el pago por Plin.'},
-  {id:'BCP',kind:'bank',mark:'BCP',color:'bcp',caption:'Transferencia bancaria',detail:'Solicita a Mystigo los datos de su cuenta BCP o CCI para coordinar la transferencia.'},
-  {id:'Interbank',kind:'bank',mark:'IB',color:'interbank',caption:'Transferencia bancaria',detail:'Solicita a Mystigo los datos de su cuenta Interbank o CCI para coordinar la transferencia.'},
-  {id:'BBVA',kind:'bank',mark:'BBVA',color:'bbva',caption:'Transferencia bancaria',detail:'Solicita a Mystigo los datos de su cuenta BBVA o CCI para coordinar la transferencia.'},
-  {id:'Scotiabank',kind:'bank',mark:'S',color:'scotiabank',caption:'Transferencia bancaria',detail:'Solicita a Mystigo los datos de su cuenta Scotiabank o CCI para coordinar la transferencia.'}
+  {id:'Yape',kind:'wallet',color:'yape',logo:'payment-logo-yape.webp',caption:'Billetera digital',detail:'Solicita a Mystigo su número o QR de Yape para coordinar el pago de la planificación.'},
+  {id:'Plin',kind:'wallet',color:'plin',logo:'payment-logo-plin.png',caption:'Desde tu app bancaria',detail:'Solicita a Mystigo el número de celular para coordinar el pago por Plin.'},
+  {id:'BCP',kind:'bank',color:'bcp',logo:'payment-logo-bcp.svg',wordmark:true,caption:'Transferencia bancaria',detail:'Solicita a Mystigo los datos de su cuenta BCP o CCI para coordinar la transferencia.'},
+  {id:'Interbank',kind:'bank',color:'interbank',logo:'payment-logo-interbank.png',caption:'Transferencia bancaria',detail:'Solicita a Mystigo los datos de su cuenta Interbank o CCI para coordinar la transferencia.'},
+  {id:'BBVA',kind:'bank',color:'bbva',logo:'payment-logo-bbva.svg',wordmark:true,caption:'Transferencia bancaria',detail:'Solicita a Mystigo los datos de su cuenta BBVA o CCI para coordinar la transferencia.'},
+  {id:'Scotiabank',kind:'bank',color:'scotiabank',logo:'payment-logo-scotiabank.svg',wordmark:true,caption:'Transferencia bancaria',detail:'Solicita a Mystigo los datos de su cuenta Scotiabank o CCI para coordinar la transferencia.'}
 ]);
 function paymentMethod(value){return MYSTIGO_PAYMENT_METHODS.find(method=>method.id===value)||null;}
-function paymentMark(method){return `<span class="payment-mark payment-${method.color}" aria-hidden="true">${method.mark}</span>`;}
+function paymentMark(method){return `<span class="payment-mark payment-${method.color}" aria-hidden="true"><img src="${method.logo}" alt="" decoding="async"></span>`;}
 function paymentDetails(p){
   const method=paymentMethod(p.paymentMethod);
-  return method?`<div class="payment-detail"><span class="payment-detail-icon">${icon('wallet')}</span><div><h3>Has elegido ${method.id}.</h3><p>${method.detail}</p><small>Planificación: ${money(MYSTIGO_PLANNING_FEE)} · Pendiente de coordinación y pago.</small></div></div>`:'<p class="payment-empty">Selecciona un medio para continuar con tu solicitud.</p>';
+  return method?`<div class="payment-detail">${paymentMark(method)}<div><h3>Has elegido ${method.id}.</h3><p>${method.detail}</p><small>Planificación: ${money(MYSTIGO_PLANNING_FEE)} · Pendiente de coordinación y pago.</small></div></div>`:'<p class="payment-empty">Selecciona un medio para continuar con tu solicitud.</p>';
 }
 function paymentSelection(p){
   const selected=paymentMethod(p.paymentMethod);
@@ -38,7 +38,7 @@ function paymentConfirmation(p){
   const method=paymentMethod(p.paymentMethod);
   return `<section class="payment-confirmation" aria-label="Resumen del medio de pago"><div>${method?paymentMark(method):icon('wallet')}<span><small>Medio de pago elegido</small><strong>${method?method.id:'Por elegir'}</strong></span><strong>${money(MYSTIGO_PLANNING_FEE)}</strong></div><p>Servicio de planificación · Mismo precio para los 30 países.</p><span class="pill">Pendiente de coordinación y pago</span><a class="text-link" href="#solicitud/${esc(p.id)}">${method?'Cambiar medio de pago':'Elegir medio de pago'} ${icon('arrow')}</a></section>`;
 }
-function paymentTeaser(){return `<section class="panel payment-teaser" aria-labelledby="home-payment-title"><div><div class="eyebrow">PLANIFICA A TU MANERA</div><h2 id="home-payment-title">Un mismo precio. Más formas de pagar.</h2><p>Planificación por <strong>${money(MYSTIGO_PLANNING_FEE)}</strong> para cualquiera de los 30 países. Elige tu medio al guardar la solicitud y coordina los datos de pago con Mystigo.</p></div><div class="payment-teaser-methods" aria-label="Métodos de pago">${MYSTIGO_PAYMENT_METHODS.map(method=>`<span>${paymentMark(method)}<strong>${method.id}</strong></span>`).join('')}</div><a class="text-link" href="#itinerarios">Preparar mi viaje ${icon('arrow')}</a></section>`;}
+function paymentTeaser(){return `<section class="panel payment-teaser" aria-labelledby="home-payment-title"><div><div class="eyebrow">PLANIFICA A TU MANERA</div><h2 id="home-payment-title">Un mismo precio. Más formas de pagar.</h2><p>Planificación por <strong>${money(MYSTIGO_PLANNING_FEE)}</strong> para cualquiera de los 30 países. Elige tu medio al guardar la solicitud y coordina los datos de pago con Mystigo.</p></div><div class="payment-teaser-methods" aria-label="Métodos de pago">${MYSTIGO_PAYMENT_METHODS.map(method=>`<span class="${method.wordmark?'payment-wordmark-item':''}">${paymentMark(method)}<strong>${method.id}</strong></span>`).join('')}</div><a class="text-link" href="#itinerarios">Preparar mi viaje ${icon('arrow')}</a></section>`;}
 const requestBeforePayments=requestView,confirmationBeforePayments=confirmationView,homeBeforePayments=home,helpBeforePayments=helpView;
 requestView=function(p){
   return requestBeforePayments(p)

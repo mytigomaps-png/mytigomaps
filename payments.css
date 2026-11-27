@@ -12,17 +12,15 @@
 .payment-option:focus-within{outline:2px solid var(--yellow);outline-offset:3px}
 .payment-option input{margin:0;width:16px;height:16px;accent-color:var(--blue);flex-shrink:0;cursor:pointer}
 .payment-option-content{display:flex;align-items:center;gap:11px;min-width:0}
-.payment-mark{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:38px;height:38px;border-radius:11px;background:#0640a2;color:#fff;font:800 12px/1 Manrope,sans-serif;letter-spacing:-.5px}
-.payment-yape{background:#742891;font-size:24px}
-.payment-plin{background:linear-gradient(145deg,#087da7,#006f75);font-size:23px}
-.payment-bcp{background:#063c88;border-bottom:3px solid #ff8b24}
-.payment-interbank{background:#08754b}
-.payment-bbva{background:#053c72;font-size:10px}
-.payment-scotiabank{background:#c72032;font-size:22px}
+.payment-mark{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;width:76px;height:42px;border-radius:10px;background:#fff;border:1px solid #e5eaf2;padding:5px}
+.payment-mark img{display:block;width:100%;height:100%;object-fit:contain;max-width:100%}
+.payment-yape,.payment-plin,.payment-interbank{width:42px;padding:3px}
+.payment-bcp,.payment-bbva{width:76px}
+.payment-scotiabank{width:88px}
 .payment-option-content strong{display:block;font-size:14px;color:var(--ink);overflow-wrap:anywhere}
 .payment-option-content small{display:block;font-size:10px;color:var(--muted);margin-top:3px;line-height:1.5}
 .payment-detail{display:flex;gap:13px;margin-top:20px;padding:17px;border:1px solid var(--line);border-radius:12px;background:var(--soft)}
-.payment-detail-icon{color:var(--blue);padding-top:2px;flex-shrink:0}
+.payment-detail>.payment-mark{margin-top:2px}
 .payment-detail h3{font-size:15px;margin:0 0 8px}
 .payment-detail p{font-size:13px!important;line-height:1.7!important;margin:0 0 9px!important;color:var(--soft-ink)!important}
 .payment-detail small{font-size:11px;color:var(--soft-ink);display:block}
@@ -43,7 +41,10 @@
 .payment-teaser p{max-width:720px;margin-bottom:0!important;font-size:14px!important}
 .payment-teaser-methods{display:flex;flex-wrap:wrap;gap:12px;margin:22px 0 14px}
 .payment-teaser-methods>span{display:flex;align-items:center;gap:8px;padding:8px 13px 8px 8px;border:1px solid var(--line);border-radius:13px;color:var(--ink);font-size:12px;background:var(--panel)}
-.payment-teaser-methods .payment-mark{width:30px;height:30px;font-size:10px;border-radius:9px}
-.payment-teaser-methods .payment-yape,.payment-teaser-methods .payment-plin,.payment-teaser-methods .payment-scotiabank{font-size:18px}
-@media(max-width:1150px){.payment-option-content{gap:8px}.payment-option{padding:13px 10px;gap:8px}.payment-option:has(input:checked){padding:12px 9px}.payment-option-content strong{font-size:13px}.payment-mark{width:33px;height:35px}}
-@media(max-width:600px){.payment-panel{padding:22px 18px}.payment-section-heading{gap:12px;margin-bottom:20px}.payment-section-heading h2{font-size:22px}.payment-section-heading p{font-size:12px!important}.payment-price{font-size:24px}.payment-price small{font-size:9px}.payment-method-grid{gap:9px}.payment-option{flex-direction:column;align-items:flex-start;padding:13px 10px;gap:8px}.payment-option:has(input:checked){padding:12px 9px}.payment-option input{position:absolute;top:13px;right:10px;margin:0;width:15px;height:15px}.payment-option-content{display:flex;flex-direction:column;align-items:flex-start;gap:9px;width:100%}.payment-option-content strong{font-size:13px}.payment-option-content small{font-size:9px;min-height:27px}.payment-mark{width:33px;height:33px}.payment-detail{padding:14px;gap:10px}.payment-detail p{font-size:12px!important}.payment-detail small{font-size:10px}.payment-teaser{padding:23px 18px}.payment-teaser h2{font-size:23px}.payment-teaser p{font-size:13px!important}.payment-teaser-methods{display:grid;grid-template-columns:1fr 1fr;gap:9px}.payment-teaser-methods>span{font-size:11px;gap:7px;padding-right:8px}.payment-confirmation{padding:15px}.payment-confirmation .pill{font-size:9px}}
+.payment-teaser-methods .payment-mark{height:32px;padding:3px;border:0;border-radius:7px}
+.payment-teaser-methods .payment-yape,.payment-teaser-methods .payment-plin,.payment-teaser-methods .payment-interbank{width:32px;padding:0}
+.payment-wordmark-item>strong{position:absolute;clip:rect(1px,1px,1px,1px);clip-path:inset(50%);width:1px;height:1px;overflow:hidden;white-space:nowrap}
+@media(max-width:1150px){.payment-option-content{gap:8px}.payment-option{padding:13px 10px;gap:8px}.payment-option:has(input:checked){padding:12px 9px}.payment-option-content strong{font-size:13px}.payment-mark{height:38px}}
+@media(max-width:600px){.payment-panel{padding:22px 18px}.payment-section-heading{gap:12px;margin-bottom:20px}.payment-section-heading h2{font-size:22px}.payment-section-heading p{font-size:12px!important}.payment-price{font-size:24px}.payment-price small{font-size:9px}.payment-method-grid{gap:9px}.payment-option{flex-direction:column;align-items:flex-start;padding:13px 10px;gap:8px}.payment-option:has(input:checked){padding:12px 9px}.payment-option input{position:absolute;top:13px;right:10px;margin:0;width:15px;height:15px}.payment-option-content{display:flex;flex-direction:column;align-items:flex-start;gap:9px;width:100%}.payment-option-content strong{font-size:13px}.payment-option-content small{font-size:9px;min-height:27px}.payment-mark{height:38px}.payment-yape,.payment-plin,.payment-interbank{width:38px}.payment-detail{padding:14px;gap:10px}.payment-detail p{font-size:12px!important}.payment-detail small{font-size:10px}.payment-teaser{padding:23px 18px}.payment-teaser h2{font-size:23px}.payment-teaser p{font-size:13px!important}.payment-teaser-methods{display:grid;grid-template-columns:1fr 1fr;gap:9px}.payment-teaser-methods>span{font-size:11px;gap:7px;padding-right:8px}.payment-confirmation{padding:15px}.payment-confirmation .pill{font-size:9px}}
+
+@media(max-width:600px){.payment-confirmation .payment-mark{width:66px;height:36px}.payment-confirmation>div{gap:9px}.payment-teaser-methods>span{justify-content:center;min-height:49px}}

@@ -1,0 +1,38 @@
+{
+  "yape": {
+    "file": "payment-logo-yape.webp",
+    "source_page": "https://www.yape.com.pe/",
+    "source_asset": "Logo Yape de la página oficial",
+    "sha256": "d0e03625a3d98bf763d9e213e84b44a669afcb077d7a1881290e693b7c7e1248"
+  },
+  "plin": {
+    "file": "payment-logo-plin.png",
+    "source_page": "https://www.scotiabank.com.pe/Personas/Default",
+    "source_asset": "https://cdn.aglty.io/scotiabank-peru/imagenes/iconos/icono-plin.png",
+    "sha256": "f8352c2364314d76fb19c51c811aab94de70cacbfdd5b0ab4650b43c61cdb483"
+  },
+  "bcp": {
+    "file": "payment-logo-bcp.svg",
+    "source_page": "https://www.viabcp.com/",
+    "source_asset": "SVG del encabezado oficial, enlace Enlace al home de ViaBCP",
+    "sha256": "b833187ab99db4e4a29f19348c63265fa77306d609843b316dea1d730b1dffd5"
+  },
+  "interbank": {
+    "file": "payment-logo-interbank.png",
+    "source_page": "https://interbank.pe/",
+    "source_asset": "https://interbank.pe/documents/39211014/39210730/banner-ibk-logo.png/af3ca285-bbed-de46-1645-7e3aabf2ae5d?version=1.0&t=1793046050556",
+    "sha256": "f45526ce9147bd97e8465271b7bbd0d4c9ac3338b5352d3908de12fe267d28fc"
+  },
+  "bbva": {
+    "file": "payment-logo-bbva.svg",
+    "source_page": "https://www.bbva.pe/",
+    "source_asset": "SVG del encabezado oficial, viewBox 0 0 600 179.8",
+    "sha256": "89cdb660038ce82896a6998643f471822423c85d73bbbd8e7a3405dede3f655f"
+  },
+  "scotiabank": {
+    "file": "payment-logo-scotiabank.svg",
+    "source_page": "https://www.scotiabank.com.pe/Personas/Default",
+    "source_asset": "https://cdn.aglty.io/scotiabank-peru/Global-Rebrand/logo.svg",
+    "sha256": "87377846365e879595a7912be60a6998e56d8eb64e6f2c978a4a6e34e7532d6a"
+  }
+}

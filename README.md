@@ -228,3 +228,8 @@ Se ofrecen los mismos seis medios de DogSpot: Yape, Plin, BCP, Interbank, BBVA y
 La selección no acredita cobro ni reserva. El estado se conserva como pendiente y se coordina el número, QR o cuenta con Mystigo. No se copian datos bancarios de DogSpot, no se inventan cuentas y no se piden credenciales. La aplicación no procesa transacciones.
 
 Archivos: `payments.js` y `payments.css`, con validación del medio en la acción de guardar solicitud en `app.js`. Pruebas: `node test-payments.cjs`, además de las comprobaciones de preferencias y racha.
+
+
+## Logos de los medios de pago
+
+Inicio, selección del medio, detalle elegido y confirmación utilizan imágenes auténticas obtenidas de los sitios oficiales de las marcas o de Scotiabank para Plin. Los archivos `payment-logo-*` se alojan con la aplicación; no se recrearon los logos con iniciales. Se conserva su proporción y el fondo blanco permite leerlos también en modo oscuro. Los archivos descargados se conservaron sin modificar sus bytes. Las fuentes y los hashes SHA-256 figuran en `payment-logo-sources.json`. Las marcas y los logotipos pertenecen a sus respectivos titulares.
