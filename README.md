@@ -214,9 +214,9 @@ Ejecuta `node test-client.cjs` con Node.js, sin instalar dependencias. Comprueba
 
 Actualización solicitada por el cliente: cuatro tonos de azul (marino `#102f63`, real `#0640a2`, intenso `#1459e5` y claro `#3478f6`), fondo blanco en modo claro y detalles amarillos. Se conservan el modo oscuro y automático, las 12 rutas, el reinicio de preferencias y los datos anteriores.
 
-La racha está disponible desde la llama del encabezado y desde Inicio, Mis viajes y Mi perfil. En Mis viajes → Mi racha, el visitante elige un destino y registra voluntariamente su viaje de hoy. Suma como máximo un día local por fecha; no se genera por abrir la app, crear planes, comprar ni autorizar ubicación. Son registros personales, no viajes verificados. Un día sin registro corta la racha actual, conservando la mejor marca, logros e historial. Se muestran los últimos siete días y metas de 1, 3, 7, 14 y 30 días consecutivos.
+La racha está disponible desde la llama del encabezado y desde Inicio, Mis viajes y Mi perfil. Para registrar un día es necesario crear o volver a elegir un perfil local. En Mis viajes → Mi racha, el visitante con perfil activo elige un destino y registra voluntariamente su viaje de hoy. Suma como máximo un día local por fecha; no se genera por abrir la app, crear planes, comprar ni autorizar ubicación. Son registros personales, no viajes verificados. Un día sin registro corta la racha actual, conservando la mejor marca, logros e historial. Se muestran los últimos siete días y metas de 1, 3, 7, 14 y 30 días consecutivos.
 
-Los registros se guardan en `travelDays` dentro de `mystigo.v1`, sin modificar los perfiles o viajes anteriores. Reiniciar preferencias conserva la racha; borrar todos los datos locales la elimina. Los registros persisten al recargar en el mismo navegador, sin sincronización entre dispositivos.
+Los registros se guardan dentro de `streakProfiles[].travelDays` en `mystigo.v1`, vinculados al ID estable del perfil activo y sin modificar los viajes anteriores. Reiniciar preferencias conserva la racha; borrar todos los datos locales la elimina. Los registros persisten al recargar en el mismo navegador, sin sincronización entre dispositivos.
 
 Archivos: `blue-theme.css` y `journey-streak.js`; `index.html` carga sus versiones y renueva los identificadores de caché. Verificación: `node test-client.cjs` y `node test-streak.cjs`.
 
@@ -233,3 +233,14 @@ Archivos: `payments.js` y `payments.css`, con validación del medio en la acció
 ## Logos de los medios de pago
 
 Inicio, selección del medio, detalle elegido y confirmación utilizan imágenes auténticas obtenidas de los sitios oficiales de las marcas o de Scotiabank para Plin. Los archivos `payment-logo-*` se alojan con la aplicación; no se recrearon los logos con iniciales. Se conserva su proporción y el fondo blanco permite leerlos también en modo oscuro. Los archivos descargados se conservaron sin modificar sus bytes. Las fuentes y los hashes SHA-256 figuran en `payment-logo-sources.json`. Las marcas y los logotipos pertenecen a sus respectivos titulares.
+
+
+## Racha vinculada al perfil
+
+Sin un perfil activo no se muestran registros anteriores, no aparece el formulario de registro y las llamadas directas al registro se rechazan sin guardar días. «Entrar a mi perfil» abre los perfiles guardados en este navegador; «Crear mi perfil» abre el formulario existente. Cada perfil recibe un ID estable, conserva su propio historial y recupera esa misma racha al volver a seleccionarlo. La edición del nombre o correo conserva el ID. Los correos repetidos se rechazan y se invita a usar el perfil existente.
+
+Mi perfil permite salir o cambiar de perfil. Salir oculta la racha y conserva su historial; reiniciar preferencias también la conserva. Borrar todos los datos elimina los perfiles y sus rachas. Las exportaciones incluyen únicamente la racha del perfil activo, aunque se conserve el resto de la información local que ya exportaba la aplicación.
+
+Al actualizar, una racha anterior se migra únicamente si había un perfil activo en los datos existentes. Los registros anteriores sin perfil no se atribuyen a un perfil creado después. Los perfiles con su historial propio no heredan datos de otros perfiles.
+
+Son perfiles locales, sin autenticación de servidor ni sincronización entre dispositivos: no se promete recuperar la racha desde otro celular o al borrar los datos del navegador. Se mantienen las 12 rutas. Pruebas: `node test-streak-profiles.cjs`, `node test-streak.cjs`, `node test-client.cjs` y `node test-payments.cjs`.

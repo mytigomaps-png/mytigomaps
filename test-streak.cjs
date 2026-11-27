@@ -19,7 +19,7 @@ t.context.entries=[{date:'2026-12-31',dest:'cusco'},{date:'2027-01-01',dest:'cus
 t.context.entries=[{date:'2028-02-28',dest:'cusco'},{date:'2028-02-29',dest:'cusco'},{date:'2028-03-01',dest:'cusco'}];assert.equal(value('travelStreakSummary(entries,"2028-03-01")').current,3,'leap year');
 assert.equal(t.run('travelStreakSummary().total'),0,'opening and rendering never create a travel day');
 assert.equal(t.run("recordTravelDay('missing')"),false);assert.equal(t.run('travelStreakSummary().total'),0);
-t.run("state.profile={name:'Jefferson',email:''};state.favorites=['cusco'];state.prefs={...state.prefs,configured:true,types:['Cultura'],tripBudget:6000,tripDays:2,people:1};prepareSurpriseOffers(true);chooseSurprise(state.surpriseOffers.plans[0].id)");
+t.run("state.profile=prepareStreakProfile('Jefferson','');state.favorites=['cusco'];state.prefs={...state.prefs,configured:true,types:['Cultura'],tripBudget:6000,tripDays:2,people:1};prepareSurpriseOffers(true);chooseSurprise(state.surpriseOffers.plans[0].id)");
 const kept=t.run('JSON.stringify({profile:state.profile,plans:state.plans,favorites:state.favorites,prefs:state.prefs})');
 assert.equal(t.run('travelStreakSummary().total'),0,'generating a trip never creates a check-in');
 t.context.location.hash='#itinerarios?racha=1';t.run('render()');
@@ -38,5 +38,5 @@ for(const route of ['inicio','itinerarios','perfil']){reloaded.context.location.
 assert.equal(reloaded.run('Object.keys(SCREEN_ROUTES).length'),12,'screen count remains intact');
 const button={dataset:{action:'confirm-reset'}};for(const handler of reloaded.events.click)handler({target:{closest:()=>button}});
 assert.equal(reloaded.run('travelStreakSummary().total'),0,'full reset deletes the ledger');assert.equal(JSON.parse(reloaded.storage.get('mystigo.v1')).travelDays,undefined);
-const blocked=boot();blocked.context.localStorage.setItem=()=>{throw new Error('no storage');};assert.equal(blocked.run("recordTravelDay('cusco')"),false);assert(blocked.els['#toast'].textContent.includes('en esta sesión'));assert.equal(blocked.run('travelStreakSummary().total'),1);
+const blocked=boot();blocked.run("state.profile=prepareStreakProfile('Viajero','');persist()");blocked.context.localStorage.setItem=()=>{throw new Error('no storage');};assert.equal(blocked.run("recordTravelDay('cusco')"),false);assert(blocked.els['#toast'].textContent.includes('en esta sesión'));assert.equal(blocked.run('travelStreakSummary().total'),1);
 console.log('PASS: real check-in submission, once per day, consecutive days, gaps, best streak, country count, date validation, year and leap-day boundaries, persistence, reset, old data, 12 routes and storage failure.');
